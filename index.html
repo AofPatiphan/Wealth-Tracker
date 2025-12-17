@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wealth Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-indigo-600"><i class="fas fa-chart-line mr-2"></i>Wealth Tracker</h1>
+            <div class="space-x-2">
+                <button onclick="exportData()" class="text-sm text-gray-500 hover:text-indigo-600"><i class="fas fa-download"></i> Backup</button>
+                <label for="importFile" class="text-sm text-gray-500 hover:text-indigo-600 cursor-pointer"><i class="fas fa-upload"></i> Restore</label>
+                <input type="file" id="importFile" class="hidden" onchange="importData(this)">
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-6 w-full gap-6 flex flex-col lg:flex-row">
+        
+        <aside class="w-full lg:w-1/3 space-y-6">
+            
+            <div class="bg-indigo-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-indigo-200 text-sm">ราคา S&P 500 ปัจจุบัน (NAV)</p>
+                        <div class="flex items-baseline mt-1">
+                            <input type="number" id="currentSp500" value="5800" step="0.01" class="bg-transparent text-3xl font-bold w-32 focus:outline-none border-b border-indigo-400" onchange="renderDashboard()">
+                            <span class="ml-1 text-sm">USD</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-indigo-200 text-sm">มูลค่าพอร์ต DCA</p>
+                        <p class="text-2xl font-bold mt-1" id="portValue">Loading...</p>
+                        <p class="text-xs text-indigo-300" id="portReturn">---</p>
+                    </div>
+                </div>
+                <!-- Units and NAV Info -->
+                <div class="mt-4 pt-4 border-t border-indigo-500 grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-indigo-200 text-xs">จำนวนหน่วยลงทุนรวม</p>
+                        <p class="text-xl font-bold mt-1" id="totalUnits">0.00</p>
+                        <p class="text-xs text-indigo-300">Units</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-indigo-200 text-xs">NAV ปัจจุบัน</p>
+                        <p class="text-xl font-bold mt-1" id="currentNAV">0.00</p>
+                        <p class="text-xs text-indigo-300">USD/Unit</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <h2 class="text-lg font-semibold mb-4 border-b pb-2">จัดการข้อมูลรายเดือน</h2>
+                <form id="dataForm" class="space-y-4">
+                    <input type="hidden" id="editIndex">
+                    
+                    <!-- เดือน/ปี และ เงินเดือน -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">เดือน/ปี (YYYY-MM)</label>
+                            <input type="month" id="inputMonth" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">เงินเดือน (บาท)</label>
+                            <input type="number" id="inputSalary" placeholder="40,000" step="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 border p-2" oninput="calculateRemaining()">
+                        </div>
+                    </div>
+
+                    <!-- ส่วนค่าใช้จ่าย Dynamic -->
+                    <div class="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                        <div class="flex justify-between items-center mb-3">
+                            <p class="text-xs font-bold text-orange-600 uppercase">💸 ค่าใช้จ่าย</p>
+                            <button type="button" onclick="addExpenseRow()" class="text-xs bg-orange-500 text-white px-2 py-1 rounded hover:bg-orange-600 transition">
+                                <i class="fas fa-plus mr-1"></i>เพิ่มรายการ
+                            </button>
+                        </div>
+                        <div id="expenseContainer" class="space-y-2">
+                            <!-- Dynamic expense rows will be added here -->
+                        </div>
+                        <button type="button" onclick="addExpenseRow()" class="mt-2 w-full py-2 border-2 border-dashed border-orange-300 rounded-md text-orange-500 text-sm hover:bg-orange-100 transition">
+                            <i class="fas fa-plus mr-1"></i> เพิ่มรายการใช้จ่าย
+                        </button>
+                        
+                        <!-- สรุปค่าใช้จ่ายรวม -->
+                        <div class="mt-3 pt-3 border-t border-orange-200 flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">รวมค่าใช้จ่าย:</span>
+                            <span id="totalExpenseDisplay" class="text-lg font-bold text-red-500">฿0</span>
+                        </div>
+                    </div>
+
+                    <!-- ส่วนการลงทุน DCA -->
+                    <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                        <p class="text-xs font-bold text-indigo-600 mb-2 uppercase">📈 ส่วนการลงทุน DCA</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">ยอดเงิน DCA (บาท)</label>
+                                <input type="number" id="inputDCA" placeholder="0" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md border p-2" oninput="calculateRemaining()">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">NAV ตอนซื้อ (S&P)</label>
+                                <input type="number" id="inputIndexPrice" placeholder="เช่น 4500.50" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md border p-2">
+                                <p class="text-xs text-gray-400 mt-1">*เพื่อให้คำนวณ Unit ได้จริง</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ส่วนเงินออมฉุกเฉิน (Radio) -->
+                    <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <p class="text-xs font-bold text-green-600 mb-3 uppercase">🏦 เงินออมฉุกเฉิน</p>
+                        
+                        <!-- Radio Options -->
+                        <div class="space-y-2">
+                            <label class="flex items-center p-3 bg-white rounded-lg border-2 cursor-pointer transition hover:border-green-400" id="radioAutoLabel">
+                                <input type="radio" name="emergencyType" value="auto" checked class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500" onchange="toggleEmergencyMode()">
+                                <div class="ml-3 flex-1">
+                                    <span class="text-sm font-medium text-gray-800">คำนวณอัตโนมัติ</span>
+                                    <p class="text-xs text-gray-500">= เงินเดือน - ค่าใช้จ่ายทั้งหมด - DCA</p>
+                                </div>
+                                <span id="autoEmergencyValue" class="text-lg font-bold text-green-600">฿0</span>
+                            </label>
+                            
+                            <label class="flex items-center p-3 bg-white rounded-lg border-2 cursor-pointer transition hover:border-green-400" id="radioCustomLabel">
+                                <input type="radio" name="emergencyType" value="custom" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500" onchange="toggleEmergencyMode()">
+                                <div class="ml-3 flex-1">
+                                    <span class="text-sm font-medium text-gray-800">กำหนดเอง</span>
+                                    <p class="text-xs text-gray-500">ระบุจำนวนเงินที่ต้องการออม</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- Custom Input (hidden by default) -->
+                        <div id="customEmergencySection" class="mt-3 hidden">
+                            <label class="block text-sm font-medium text-gray-700">จำนวนเงินออมฉุกเฉิน (บาท)</label>
+                            <input type="number" id="inputEmergency" placeholder="0" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 border p-2">
+                            <p id="emergencyWarning" class="text-xs text-orange-500 mt-1 hidden"></p>
+                        </div>
+                        
+                        <!-- Summary Box -->
+                        <div class="mt-3 p-3 bg-green-100 rounded-lg">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">เงินคงเหลือหลังหักค่าใช้จ่าย+DCA:</span>
+                                <span id="remainingDisplay" class="font-bold text-gray-800">฿0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 pt-2">
+                        <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">บันทึกข้อมูล</button>
+                        <button type="button" onclick="resetForm()" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600">ล้าง</button>
+                    </div>
+                </form>
+            </div>
+        </aside>
+
+        <section class="w-full lg:w-2/3 space-y-6">
+            
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <h2 class="text-lg font-semibold mb-4">ภาพรวมการเติบโต</h2>
+                <div class="h-80 w-full">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold">รายการย้อนหลัง</h2>
+                    <span class="text-xs text-gray-400">คลิกที่แถวเพื่อแก้ไข</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เดือน</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-purple-600 uppercase tracking-wider">เงินเดือน</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">ออมฉุกเฉิน</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-red-500 uppercase tracking-wider">ค่าใช้จ่าย</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-blue-600 uppercase tracking-wider">DCA</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">NAV</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-cyan-600 uppercase tracking-wider">Units</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody" class="bg-white divide-y divide-gray-200 text-sm">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // --- DATA STRUCTURE & STATE ---
+        let records = [];
+        const THB_USD_RATE = 34.5; // Fixed for simple estimation, can be made dynamic input
+        let expenseRowCounter = 0;
+        
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            renderDashboard();
+            addExpenseRow(); // Add default first row
+            calculateRemaining();
+        });
+
+        // --- CORE FUNCTIONS ---
+
+        function saveData() {
+            // Sort records by date before saving
+            records.sort((a, b) => new Date(a.month) - new Date(b.month));
+            localStorage.setItem('wealthData', JSON.stringify(records));
+            renderDashboard();
+            resetForm();
+        }
+
+        function loadData() {
+            const stored = localStorage.getItem('wealthData');
+            if (stored) {
+                records = JSON.parse(stored);
+            } else {
+                // Mock Data for first use
+                records = [
+                    { month: '2025-10', salary: 40000, emergency: 5000, expenses: [{name: 'ค่ากิน', amount: 8000}, {name: 'ค่าบ้าน', amount: 4000}], dca: 4000, indexPrice: 5700 },
+                    { month: '2025-11', salary: 40000, emergency: 5500, expenses: [{name: 'ค่ากิน', amount: 8500}, {name: 'ค่าบ้าน', amount: 4500}], dca: 4000, indexPrice: 5750 },
+                    { month: '2025-12', salary: 42000, emergency: 6000, expenses: [{name: 'ค่ากิน', amount: 7500}, {name: 'ค่าบ้าน', amount: 4000}], dca: 4000, indexPrice: 5800 },
+                ];
+            }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "wealth_backup_" + new Date().toISOString().slice(0,10) + ".json");
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    records = JSON.parse(e.target.result);
+                    saveData(); // Save to local and re-render
+                    alert("นำเข้าข้อมูลเรียบร้อย!");
+                } catch (err) {
+                    alert("ไฟล์ไม่ถูกต้อง");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- EXPENSE MANAGEMENT ---
+
+        function addExpenseRow(name = '', amount = '') {
+            const container = document.getElementById('expenseContainer');
+            const rowId = `expense_${expenseRowCounter++}`;
+            
+            const row = document.createElement('div');
+            row.className = 'flex gap-2 items-center';
+            row.id = rowId;
+            row.innerHTML = `
+                <input type="text" placeholder="ชื่อรายการ (เช่น ค่ากิน)" value="${name}" 
+                    class="flex-1 rounded-md border-gray-300 border p-2 text-sm focus:border-orange-500" 
+                    oninput="calculateRemaining()">
+                <input type="number" placeholder="0" value="${amount}" step="0.01"
+                    class="w-28 rounded-md border-gray-300 border p-2 text-sm text-right focus:border-orange-500" 
+                    oninput="calculateRemaining()">
+                <button type="button" onclick="removeExpenseRow('${rowId}')" 
+                    class="w-8 h-8 flex items-center justify-center bg-red-100 text-red-500 rounded hover:bg-red-500 hover:text-white transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(row);
+            calculateRemaining();
+        }
+
+        function removeExpenseRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                calculateRemaining();
+            }
+        }
+
+        function getExpenseItems() {
+            const items = [];
+            document.querySelectorAll('#expenseContainer > div').forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const name = inputs[0].value.trim();
+                const amount = parseFloat(inputs[1].value) || 0;
+                if (name && amount > 0) {
+                    items.push({ name, amount });
+                }
+            });
+            return items;
+        }
+
+        function getTotalExpenses() {
+            let total = 0;
+            document.querySelectorAll('#expenseContainer > div').forEach(row => {
+                const amountInput = row.querySelectorAll('input')[1];
+                total += parseFloat(amountInput.value) || 0;
+            });
+            return total;
+        }
+
+        // --- CALCULATION ---
+
+        function calculateRemaining() {
+            const salary = parseFloat(document.getElementById('inputSalary').value) || 0;
+            const totalExpenses = getTotalExpenses();
+            const dca = parseFloat(document.getElementById('inputDCA').value) || 0;
+            
+            const remaining = salary - totalExpenses - dca;
+            
+            // Update displays
+            document.getElementById('totalExpenseDisplay').textContent = `฿${totalExpenses.toLocaleString()}`;
+            document.getElementById('remainingDisplay').textContent = `฿${remaining.toLocaleString()}`;
+            document.getElementById('autoEmergencyValue').textContent = `฿${Math.max(0, remaining).toLocaleString()}`;
+            
+            // Update remaining color
+            const remainingEl = document.getElementById('remainingDisplay');
+            if (remaining < 0) {
+                remainingEl.classList.remove('text-gray-800', 'text-green-600');
+                remainingEl.classList.add('text-red-500');
+            } else {
+                remainingEl.classList.remove('text-red-500');
+                remainingEl.classList.add('text-green-600');
+            }
+            
+            // Check custom amount warning
+            const emergencyType = document.querySelector('input[name="emergencyType"]:checked').value;
+            if (emergencyType === 'custom') {
+                const customAmount = parseFloat(document.getElementById('inputEmergency').value) || 0;
+                const warningEl = document.getElementById('emergencyWarning');
+                if (customAmount > remaining) {
+                    warningEl.textContent = `⚠️ จำนวนเงินมากกว่าเงินคงเหลือ (${remaining.toLocaleString()} บาท)`;
+                    warningEl.classList.remove('hidden');
+                } else {
+                    warningEl.classList.add('hidden');
+                }
+            }
+        }
+
+        function toggleEmergencyMode() {
+            const emergencyType = document.querySelector('input[name="emergencyType"]:checked').value;
+            const customSection = document.getElementById('customEmergencySection');
+            const autoLabel = document.getElementById('radioAutoLabel');
+            const customLabel = document.getElementById('radioCustomLabel');
+            
+            if (emergencyType === 'custom') {
+                customSection.classList.remove('hidden');
+                autoLabel.classList.remove('border-green-500');
+                autoLabel.classList.add('border-gray-200');
+                customLabel.classList.remove('border-gray-200');
+                customLabel.classList.add('border-green-500');
+            } else {
+                customSection.classList.add('hidden');
+                autoLabel.classList.remove('border-gray-200');
+                autoLabel.classList.add('border-green-500');
+                customLabel.classList.remove('border-green-500');
+                customLabel.classList.add('border-gray-200');
+            }
+            calculateRemaining();
+        }
+
+        // --- FORM HANDLING ---
+
+        const form = document.getElementById('dataForm');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const editIndex = document.getElementById('editIndex').value;
+            
+            const salary = parseFloat(document.getElementById('inputSalary').value) || 0;
+            const expenses = getExpenseItems();
+            const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+            const dca = parseFloat(document.getElementById('inputDCA').value) || 0;
+            const remaining = salary - totalExpenses - dca;
+            
+            // Determine emergency amount based on radio selection
+            const emergencyType = document.querySelector('input[name="emergencyType"]:checked').value;
+            let emergency;
+            if (emergencyType === 'auto') {
+                emergency = Math.max(0, remaining);
+            } else {
+                emergency = parseFloat(document.getElementById('inputEmergency').value) || 0;
+            }
+            
+            const newRecord = {
+                month: document.getElementById('inputMonth').value,
+                salary: salary,
+                emergency: emergency,
+                expenses: expenses,
+                dca: dca,
+                indexPrice: parseFloat(document.getElementById('inputIndexPrice').value) || 0
+            };
+
+            if (editIndex !== "") {
+                records[editIndex] = newRecord;
+            } else {
+                // Check if month already exists
+                const existing = records.findIndex(r => r.month === newRecord.month);
+                if (existing >= 0) {
+                    if(!confirm("เดือนนี้มีข้อมูลอยู่แล้ว ต้องการทับข้อมูลเดิมหรือไม่?")) return;
+                    records[existing] = newRecord;
+                } else {
+                    records.push(newRecord);
+                }
+            }
+            saveData();
+        });
+
+        function editRecord(index) {
+            const r = records[index];
+            document.getElementById('editIndex').value = index;
+            document.getElementById('inputMonth').value = r.month;
+            document.getElementById('inputSalary').value = r.salary || 0;
+            document.getElementById('inputDCA').value = r.dca;
+            document.getElementById('inputIndexPrice').value = r.indexPrice;
+            
+            // Clear and rebuild expense rows
+            document.getElementById('expenseContainer').innerHTML = '';
+            expenseRowCounter = 0;
+            
+            // Handle both old format (single expense) and new format (expenses array)
+            if (r.expenses && Array.isArray(r.expenses)) {
+                r.expenses.forEach(exp => addExpenseRow(exp.name, exp.amount));
+            } else if (r.expense) {
+                // Old format compatibility
+                addExpenseRow('ค่าใช้จ่าย', r.expense);
+            }
+            
+            if (document.querySelectorAll('#expenseContainer > div').length === 0) {
+                addExpenseRow();
+            }
+            
+            // Set emergency mode
+            const salary = r.salary || 0;
+            const totalExpenses = r.expenses ? r.expenses.reduce((sum, e) => sum + e.amount, 0) : (r.expense || 0);
+            const remaining = salary - totalExpenses - r.dca;
+            
+            // Check if emergency matches auto calculation
+            if (Math.abs(r.emergency - Math.max(0, remaining)) < 1) {
+                document.querySelector('input[name="emergencyType"][value="auto"]').checked = true;
+            } else {
+                document.querySelector('input[name="emergencyType"][value="custom"]').checked = true;
+                document.getElementById('inputEmergency').value = r.emergency;
+            }
+            toggleEmergencyMode();
+            calculateRemaining();
+            
+            // Scroll to form
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteRecord(index) {
+            if(confirm('ยืนยันที่จะลบข้อมูลเดือนนี้?')) {
+                records.splice(index, 1);
+                saveData();
+            }
+        }
+
+        function duplicateRecord(index) {
+            const r = records[index];
+            
+            // Clear editIndex so it creates a new record
+            document.getElementById('editIndex').value = "";
+            
+            // Set current month as default (user can change)
+            const now = new Date();
+            const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            document.getElementById('inputMonth').value = currentMonth;
+            
+            // Copy salary
+            document.getElementById('inputSalary').value = r.salary || 0;
+            
+            // Copy DCA info
+            document.getElementById('inputDCA').value = r.dca;
+            document.getElementById('inputIndexPrice').value = r.indexPrice;
+            
+            // Clear and rebuild expense rows
+            document.getElementById('expenseContainer').innerHTML = '';
+            expenseRowCounter = 0;
+            
+            if (r.expenses && Array.isArray(r.expenses)) {
+                r.expenses.forEach(exp => addExpenseRow(exp.name, exp.amount));
+            } else if (r.expense) {
+                addExpenseRow('ค่าใช้จ่าย', r.expense);
+            }
+            
+            if (document.querySelectorAll('#expenseContainer > div').length === 0) {
+                addExpenseRow();
+            }
+            
+            // Set emergency mode
+            const salary = r.salary || 0;
+            const totalExpenses = r.expenses ? r.expenses.reduce((sum, e) => sum + e.amount, 0) : (r.expense || 0);
+            const remaining = salary - totalExpenses - r.dca;
+            
+            if (Math.abs(r.emergency - Math.max(0, remaining)) < 1) {
+                document.querySelector('input[name="emergencyType"][value="auto"]').checked = true;
+            } else {
+                document.querySelector('input[name="emergencyType"][value="custom"]').checked = true;
+                document.getElementById('inputEmergency').value = r.emergency;
+            }
+            toggleEmergencyMode();
+            calculateRemaining();
+            
+            // Scroll to form
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Show notification
+            showNotification('📋 คัดลอกข้อมูลแล้ว กรุณาเลือกเดือนใหม่');
+        }
+
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-4 bg-indigo-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-pulse';
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.transition = 'opacity 0.3s';
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function resetForm() {
+            form.reset();
+            document.getElementById('editIndex').value = "";
+            document.getElementById('expenseContainer').innerHTML = '';
+            expenseRowCounter = 0;
+            addExpenseRow();
+            document.querySelector('input[name="emergencyType"][value="auto"]').checked = true;
+            toggleEmergencyMode();
+            calculateRemaining();
+        }
+
+        // --- RENDERING & CHARTS ---
+
+        let myChart = null;
+
+        // Helper function to get total expenses from a record
+        function getRecordTotalExpenses(r) {
+            if (r.expenses && Array.isArray(r.expenses)) {
+                return r.expenses.reduce((sum, e) => sum + e.amount, 0);
+            }
+            return r.expense || 0;
+        }
+
+        // Helper function to check if a month is in the future
+        function isFutureMonth(monthStr) {
+            const now = new Date();
+            const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            return monthStr > currentMonth;
+        }
+
+        // Get current month string
+        function getCurrentMonth() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function renderDashboard() {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+
+            let totalInvestedTHB = 0;
+            let totalUnits = 0;
+
+            records.forEach((r, index) => {
+                const totalExpense = getRecordTotalExpenses(r);
+                const isFuture = isFutureMonth(r.month);
+                
+                // Calculate units for this row
+                let rowUnits = 0;
+                if (r.dca > 0 && r.indexPrice > 0) {
+                    const investedUSD = r.dca / THB_USD_RATE;
+                    rowUnits = investedUSD / r.indexPrice;
+                }
+                
+                // Table Row
+                const tr = document.createElement('tr');
+                
+                // Style based on whether it's future or not
+                if (isFuture) {
+                    tr.className = "bg-gray-100 opacity-60 cursor-pointer transition hover:opacity-80";
+                } else {
+                    tr.className = "hover:bg-gray-50 cursor-pointer transition";
+                }
+                
+                tr.onclick = (e) => { if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I') editRecord(index); };
+                
+                // Create expense tooltip if multiple items
+                let expenseDisplay = totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                if (r.expenses && r.expenses.length > 1) {
+                    const expenseList = r.expenses.map(e => `${e.name}: ฿${e.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`).join('\n');
+                    expenseDisplay = `<span title="${expenseList}" class="cursor-help border-b border-dashed border-gray-400">${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`;
+                }
+                
+                // Month display with future badge
+                let monthDisplay = r.month;
+                if (isFuture) {
+                    monthDisplay = `${r.month} <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium">📅 อนาคต</span>`;
+                }
+                
+                // Units display
+                let unitsDisplay = rowUnits > 0 ? rowUnits.toFixed(6) : '-';
+                
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap font-medium ${isFuture ? 'text-gray-500' : 'text-gray-900'}">${monthDisplay}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right ${isFuture ? 'text-gray-400' : 'text-purple-600'}">${(r.salary || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right ${isFuture ? 'text-gray-400' : 'text-green-600'}">${r.emergency.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right ${isFuture ? 'text-gray-400' : 'text-red-500'}">${expenseDisplay}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right ${isFuture ? 'text-gray-400' : 'text-blue-600'} font-medium">${r.dca.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-gray-500">${r.indexPrice > 0 ? r.indexPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right ${isFuture ? 'text-gray-400' : 'text-cyan-600'} font-mono text-xs">${unitsDisplay}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
+                        <button onclick="duplicateRecord(${index})" class="text-indigo-600 hover:text-indigo-900" title="Duplicate"><i class="fas fa-copy"></i></button>
+                        <button onclick="deleteRecord(${index})" class="text-red-600 hover:text-red-900" title="Delete"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                // Calculation for Portfolio - ONLY for current month and past months
+                if (!isFuture && r.dca > 0 && r.indexPrice > 0) {
+                    totalInvestedTHB += r.dca;
+                    totalUnits += rowUnits;
+                }
+            });
+
+            // Update Portfolio Widget
+            const currentSp500 = parseFloat(document.getElementById('currentSp500').value) || 0;
+            const currentValueUSD = totalUnits * currentSp500;
+            const currentValueTHB = currentValueUSD * THB_USD_RATE;
+            
+            const profit = currentValueTHB - totalInvestedTHB;
+            const profitPercent = totalInvestedTHB > 0 ? (profit / totalInvestedTHB) * 100 : 0;
+
+            document.getElementById('portValue').innerText = `฿${currentValueTHB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            const returnEl = document.getElementById('portReturn');
+            returnEl.innerHTML = `ต้นทุน: ฿${totalInvestedTHB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="${profit >= 0 ? 'text-green-300' : 'text-red-300'} ml-2">(${profit >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)</span>`;
+
+            // Update Units and NAV display
+            document.getElementById('totalUnits').innerText = totalUnits.toFixed(6);
+            document.getElementById('currentNAV').innerText = currentSp500.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            // Update Chart
+            updateChart();
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            // Filter to only include current and past months for chart
+            const validRecords = records.filter(r => !isFutureMonth(r.month));
+            
+            // Prepare Data arrays
+            const labels = validRecords.map(r => r.month);
+            const dataEmergency = validRecords.map(r => r.emergency);
+            const dataDCA = validRecords.map(r => r.dca);
+            const dataExpense = validRecords.map(r => getRecordTotalExpenses(r));
+            
+            if (myChart) myChart.destroy();
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'เงินออมฉุกเฉิน',
+                            data: dataEmergency,
+                            backgroundColor: '#fbbf24', // Amber
+                            stack: 'Stack 0',
+                        },
+                        {
+                            label: 'DCA Investment',
+                            data: dataDCA,
+                            backgroundColor: '#4f46e5', // Indigo
+                            stack: 'Stack 0',
+                        },
+                        {
+                            label: 'ค่าใช้จ่าย',
+                            data: dataExpense,
+                            type: 'line',
+                            borderColor: '#ef4444', // Red
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { stacked: true, beginAtZero: true }
+                    },
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: { mode: 'index', intersect: false }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
