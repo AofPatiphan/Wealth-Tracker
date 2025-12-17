@@ -52,10 +52,10 @@
             <div class="bg-indigo-600 rounded-xl p-6 text-white shadow-lg">
                 <div class="flex justify-between items-start">
                     <div>
-                        <p class="text-indigo-200 text-sm">ราคา S&P 500 ปัจจุบัน (NAV)</p>
+                        <p class="text-indigo-200 text-sm">NAV ปัจจุบัน (SCBS&P500E)</p>
                         <div class="flex items-baseline mt-1">
-                            <input type="number" id="currentSp500" value="5800" step="0.01" class="bg-transparent text-3xl font-bold w-32 focus:outline-none border-b border-indigo-400" onchange="renderDashboard()">
-                            <span class="ml-1 text-sm">USD</span>
+                            <input type="number" id="currentNAV" value="28.00" step="0.0001" class="bg-transparent text-3xl font-bold w-28 focus:outline-none border-b border-indigo-400" onchange="renderDashboard()">
+                            <span class="ml-1 text-sm">บาท</span>
                         </div>
                     </div>
                     <div class="text-right">
@@ -72,9 +72,9 @@
                         <p class="text-xs text-indigo-300">Units</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-indigo-200 text-xs">NAV ปัจจุบัน</p>
-                        <p class="text-xl font-bold mt-1" id="currentNAV">0.00</p>
-                        <p class="text-xs text-indigo-300">USD/Unit</p>
+                        <p class="text-indigo-200 text-xs">ต้นทุนรวม</p>
+                        <p class="text-xl font-bold mt-1" id="totalCost">฿0</p>
+                        <p class="text-xs text-indigo-300">บาท</p>
                     </div>
                 </div>
             </div>
@@ -120,16 +120,56 @@
 
                     <!-- ส่วนการลงทุน DCA -->
                     <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                        <p class="text-xs font-bold text-indigo-600 mb-2 uppercase">📈 ส่วนการลงทุน DCA</p>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">ยอดเงิน DCA (บาท)</label>
-                                <input type="number" id="inputDCA" placeholder="0" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md border p-2" oninput="calculateRemaining()">
+                        <div class="flex justify-between items-center mb-3">
+                            <p class="text-xs font-bold text-indigo-600 uppercase">📈 ส่วนการลงทุน DCA (SCBS&P500E)</p>
+                            <!-- DCA Mode Toggle -->
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-gray-500">รายเดือน</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="weeklyMode" class="sr-only peer" onchange="toggleDCAMode()">
+                                    <div class="w-9 h-5 bg-gray-300 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
+                                <span class="text-xs text-gray-500">รายสัปดาห์</span>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">NAV ตอนซื้อ (S&P)</label>
-                                <input type="number" id="inputIndexPrice" placeholder="เช่น 4500.50" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md border p-2">
-                                <p class="text-xs text-gray-400 mt-1">*เพื่อให้คำนวณ Unit ได้จริง</p>
+                        </div>
+                        
+                        <!-- Monthly DCA Mode -->
+                        <div id="monthlyDCASection">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">ยอดเงิน DCA (บาท)</label>
+                                    <input type="number" id="inputDCA" placeholder="0" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md border p-2" oninput="calculateRemaining()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">NAV ตอนซื้อ (บาท)</label>
+                                    <input type="number" id="inputIndexPrice" placeholder="เช่น 27.50" step="0.0001" class="mt-1 block w-full border-gray-300 rounded-md border p-2">
+                                    <p class="text-xs text-gray-400 mt-1">*ดู NAV ได้ที่ SCB Asset</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Weekly DCA Mode -->
+                        <div id="weeklyDCASection" class="hidden">
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-gray-700">ยอดเงินต่อสัปดาห์ (บาท)</label>
+                                <input type="number" id="weeklyAmount" placeholder="1000" step="0.01" value="1000" class="mt-1 block w-full border-gray-300 rounded-md border p-2" oninput="updateWeeklyTotal()">
+                            </div>
+                            <div class="mb-2 flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-700">วันพุธในเดือนนี้:</span>
+                                <span id="wednesdayCount" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">0 วัน</span>
+                            </div>
+                            <div id="weeklyInputs" class="space-y-2 max-h-48 overflow-y-auto">
+                                <!-- Weekly inputs will be generated here -->
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-indigo-200">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">รวม DCA เดือนนี้:</span>
+                                    <span id="weeklyTotalDCA" class="font-bold text-indigo-600">฿0</span>
+                                </div>
+                                <div class="flex justify-between text-sm mt-1">
+                                    <span class="text-gray-600">รวม Units:</span>
+                                    <span id="weeklyTotalUnits" class="font-bold text-indigo-600">0</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -400,7 +440,6 @@
     <script>
         // --- DATA STRUCTURE & STATE ---
         window.records = [];
-        const THB_USD_RATE = 34.5;
         let expenseRowCounter = 0;
         
         // --- INITIALIZATION ---
@@ -510,6 +549,120 @@
             return total;
         }
 
+        // --- DCA MODE FUNCTIONS ---
+
+        function toggleDCAMode() {
+            const isWeekly = document.getElementById('weeklyMode').checked;
+            const monthlySection = document.getElementById('monthlyDCASection');
+            const weeklySection = document.getElementById('weeklyDCASection');
+            
+            if (isWeekly) {
+                monthlySection.classList.add('hidden');
+                weeklySection.classList.remove('hidden');
+                generateWeeklyInputs();
+            } else {
+                monthlySection.classList.remove('hidden');
+                weeklySection.classList.add('hidden');
+            }
+            calculateRemaining();
+        }
+
+        function getWednesdaysInMonth(year, month) {
+            const wednesdays = [];
+            const date = new Date(year, month - 1, 1);
+            
+            // Find first Wednesday
+            while (date.getDay() !== 3) {
+                date.setDate(date.getDate() + 1);
+            }
+            
+            // Get all Wednesdays in the month
+            while (date.getMonth() === month - 1) {
+                wednesdays.push(new Date(date));
+                date.setDate(date.getDate() + 7);
+            }
+            
+            return wednesdays;
+        }
+
+        function formatThaiDate(date) {
+            const days = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+            const day = date.getDate();
+            const month = date.getMonth() + 1;
+            return `พ. ${day}/${month}`;
+        }
+
+        function generateWeeklyInputs() {
+            const monthInput = document.getElementById('inputMonth').value;
+            if (!monthInput) {
+                document.getElementById('weeklyInputs').innerHTML = '<p class="text-sm text-gray-400 text-center py-4">กรุณาเลือกเดือนก่อน</p>';
+                document.getElementById('wednesdayCount').textContent = '0 วัน';
+                return;
+            }
+            
+            const [year, month] = monthInput.split('-').map(Number);
+            const wednesdays = getWednesdaysInMonth(year, month);
+            const container = document.getElementById('weeklyInputs');
+            const weeklyAmount = parseFloat(document.getElementById('weeklyAmount').value) || 1000;
+            
+            document.getElementById('wednesdayCount').textContent = `${wednesdays.length} วัน`;
+            
+            container.innerHTML = wednesdays.map((wed, index) => `
+                <div class="flex gap-2 items-center bg-white p-2 rounded-lg border border-indigo-100">
+                    <span class="text-xs text-gray-500 w-16">${formatThaiDate(wed)}</span>
+                    <input type="number" value="${weeklyAmount}" step="0.01" 
+                        class="w-20 text-sm border-gray-300 rounded border p-1 text-right weekly-amount" 
+                        oninput="updateWeeklyTotal()">
+                    <span class="text-xs text-gray-400">บาท</span>
+                    <span class="text-xs text-gray-400 mx-1">NAV:</span>
+                    <input type="number" placeholder="27.50" step="0.0001" 
+                        class="w-20 text-sm border-gray-300 rounded border p-1 text-right weekly-nav" 
+                        oninput="updateWeeklyTotal()">
+                </div>
+            `).join('');
+            
+            updateWeeklyTotal();
+        }
+
+        function updateWeeklyTotal() {
+            const amounts = document.querySelectorAll('.weekly-amount');
+            const navs = document.querySelectorAll('.weekly-nav');
+            
+            let totalDCA = 0;
+            let totalUnits = 0;
+            
+            amounts.forEach((amountInput, index) => {
+                const amount = parseFloat(amountInput.value) || 0;
+                const nav = parseFloat(navs[index]?.value) || 0;
+                
+                totalDCA += amount;
+                if (nav > 0) {
+                    totalUnits += amount / nav;
+                }
+            });
+            
+            document.getElementById('weeklyTotalDCA').textContent = `฿${totalDCA.toLocaleString()}`;
+            document.getElementById('weeklyTotalUnits').textContent = totalUnits.toFixed(4);
+            
+            // Update hidden fields for form submission
+            document.getElementById('inputDCA').value = totalDCA;
+            
+            // Calculate weighted average NAV
+            if (totalUnits > 0) {
+                const avgNAV = totalDCA / totalUnits;
+                document.getElementById('inputIndexPrice').value = avgNAV.toFixed(4);
+            }
+            
+            calculateRemaining();
+        }
+
+        // Update weekly inputs when month changes
+        document.getElementById('inputMonth')?.addEventListener('change', function() {
+            if (document.getElementById('weeklyMode').checked) {
+                generateWeeklyInputs();
+            }
+        });
+
         // --- CALCULATION ---
 
         function calculateRemaining() {
@@ -588,13 +741,33 @@
                 emergency = parseFloat(document.getElementById('inputEmergency').value) || 0;
             }
             
+            // Check if weekly mode and collect weekly data
+            const isWeeklyMode = document.getElementById('weeklyMode').checked;
+            let weeklyData = null;
+            
+            if (isWeeklyMode) {
+                const amounts = document.querySelectorAll('.weekly-amount');
+                const navs = document.querySelectorAll('.weekly-nav');
+                weeklyData = [];
+                
+                amounts.forEach((amountInput, index) => {
+                    const amount = parseFloat(amountInput.value) || 0;
+                    const nav = parseFloat(navs[index]?.value) || 0;
+                    if (amount > 0) {
+                        weeklyData.push({ amount, nav });
+                    }
+                });
+            }
+            
             const newRecord = {
                 month: document.getElementById('inputMonth').value,
                 salary: salary,
                 emergency: emergency,
                 expenses: expenses,
                 dca: dca,
-                indexPrice: parseFloat(document.getElementById('inputIndexPrice').value) || 0
+                indexPrice: parseFloat(document.getElementById('inputIndexPrice').value) || 0,
+                weeklyMode: isWeeklyMode,
+                weeklyData: weeklyData
             };
 
             if (editIndex !== "") {
@@ -630,6 +803,27 @@
             
             if (document.querySelectorAll('#expenseContainer > div').length === 0) {
                 addExpenseRow();
+            }
+            
+            // Restore weekly mode if applicable
+            if (r.weeklyMode && r.weeklyData) {
+                document.getElementById('weeklyMode').checked = true;
+                toggleDCAMode();
+                
+                // Wait for inputs to be generated then fill them
+                setTimeout(() => {
+                    const amounts = document.querySelectorAll('.weekly-amount');
+                    const navs = document.querySelectorAll('.weekly-nav');
+                    
+                    r.weeklyData.forEach((data, i) => {
+                        if (amounts[i]) amounts[i].value = data.amount;
+                        if (navs[i]) navs[i].value = data.nav;
+                    });
+                    updateWeeklyTotal();
+                }, 100);
+            } else {
+                document.getElementById('weeklyMode').checked = false;
+                toggleDCAMode();
             }
             
             const salary = r.salary || 0;
@@ -719,6 +913,13 @@
             addExpenseRow();
             document.querySelector('input[name="emergencyType"][value="auto"]').checked = true;
             toggleEmergencyMode();
+            
+            // Reset weekly mode
+            document.getElementById('weeklyMode').checked = false;
+            document.getElementById('monthlyDCASection').classList.remove('hidden');
+            document.getElementById('weeklyDCASection').classList.add('hidden');
+            document.getElementById('weeklyInputs').innerHTML = '';
+            
             calculateRemaining();
         }
 
@@ -755,10 +956,10 @@
                 const totalExpense = getRecordTotalExpenses(r);
                 const isFuture = isFutureMonth(r.month);
                 
+                // Calculate units: DCA (บาท) / NAV (บาท) = Units
                 let rowUnits = 0;
                 if (r.dca > 0 && r.indexPrice > 0) {
-                    const investedUSD = r.dca / THB_USD_RATE;
-                    rowUnits = investedUSD / r.indexPrice;
+                    rowUnits = r.dca / r.indexPrice;
                 }
                 
                 const tr = document.createElement('tr');
@@ -805,9 +1006,11 @@
                 }
             });
 
-            const currentSp500 = parseFloat(document.getElementById('currentSp500').value) || 0;
-            const currentValueUSD = totalUnits * currentSp500;
-            const currentValueTHB = currentValueUSD * THB_USD_RATE;
+            // NAV ปัจจุบัน (บาท)
+            const currentNAV = parseFloat(document.getElementById('currentNAV').value) || 0;
+            
+            // มูลค่าปัจจุบัน = Units x NAV ปัจจุบัน (บาท)
+            const currentValueTHB = totalUnits * currentNAV;
             
             const profit = currentValueTHB - totalInvestedTHB;
             const profitPercent = totalInvestedTHB > 0 ? (profit / totalInvestedTHB) * 100 : 0;
@@ -815,10 +1018,10 @@
             document.getElementById('portValue').innerText = `฿${currentValueTHB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             
             const returnEl = document.getElementById('portReturn');
-            returnEl.innerHTML = `ต้นทุน: ฿${totalInvestedTHB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="${profit >= 0 ? 'text-green-300' : 'text-red-300'} ml-2">(${profit >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)</span>`;
+            returnEl.innerHTML = `กำไร/ขาดทุน: <span class="${profit >= 0 ? 'text-green-300' : 'text-red-300'}">${profit >= 0 ? '+' : ''}฿${profit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${profit >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)</span>`;
 
-            document.getElementById('totalUnits').innerText = totalUnits.toFixed(6);
-            document.getElementById('currentNAV').innerText = currentSp500.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('totalUnits').innerText = totalUnits.toFixed(4);
+            document.getElementById('totalCost').innerText = `฿${totalInvestedTHB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
             updateChart();
         }
