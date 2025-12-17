@@ -17,11 +17,31 @@
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <h1 class="text-xl font-bold text-indigo-600"><i class="fas fa-chart-line mr-2"></i>Wealth Tracker</h1>
-            <div class="space-x-2">
-                <button onclick="exportData()" class="text-sm text-gray-500 hover:text-indigo-600"><i class="fas fa-download"></i> Backup</button>
-                <label for="importFile" class="text-sm text-gray-500 hover:text-indigo-600 cursor-pointer"><i class="fas fa-upload"></i> Restore</label>
-                <input type="file" id="importFile" class="hidden" onchange="importData(this)">
+            <div class="flex items-center space-x-3">
+                <!-- Auth UI -->
+                <div id="authSection" class="flex items-center space-x-2">
+                    <div id="userInfo" class="hidden flex items-center space-x-2">
+                        <img id="userAvatar" src="" alt="" class="w-8 h-8 rounded-full border-2 border-indigo-300">
+                        <span id="userName" class="text-sm text-gray-600 hidden sm:inline"></span>
+                        <button onclick="signOutUser()" class="text-sm text-red-500 hover:text-red-700" title="ออกจากระบบ">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                    <button id="signInBtn" onclick="signInWithGoogle()" class="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50 flex items-center space-x-2 shadow-sm">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-4 h-4">
+                        <span>เข้าสู่ระบบ</span>
+                    </button>
+                </div>
+                <div class="border-l pl-3 space-x-2">
+                    <button onclick="exportData()" class="text-sm text-gray-500 hover:text-indigo-600"><i class="fas fa-download"></i> <span class="hidden sm:inline">Backup</span></button>
+                    <label for="importFile" class="text-sm text-gray-500 hover:text-indigo-600 cursor-pointer"><i class="fas fa-upload"></i> <span class="hidden sm:inline">Restore</span></label>
+                    <input type="file" id="importFile" class="hidden" onchange="importData(this)">
+                </div>
             </div>
+        </div>
+        <!-- Sync Status Bar -->
+        <div id="syncStatus" class="hidden bg-indigo-50 border-t border-indigo-100 px-4 py-1 text-center text-xs text-indigo-600">
+            <i class="fas fa-cloud"></i> <span id="syncText">ข้อมูล sync กับ Cloud</span>
         </div>
     </header>
 
@@ -198,24 +218,202 @@
         </section>
     </main>
 
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA87Jp9YJWZtz-SXFzInXPhMa6ptlZ6EwQ",
+            authDomain: "wealth-tracker-7ff8c.firebaseapp.com",
+            projectId: "wealth-tracker-7ff8c",
+            storageBucket: "wealth-tracker-7ff8c.firebasestorage.app",
+            messagingSenderId: "223313325112",
+            appId: "1:223313325112:web:c5366d94d3a24d1c2acacd",
+            measurementId: "G-YPC6L2QLWW"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let unsubscribeSnapshot = null;
+
+        // Make functions globally available
+        window.signInWithGoogle = async function() {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                showNotification('✅ เข้าสู่ระบบสำเร็จ!');
+            } catch (error) {
+                console.error('Sign in error:', error);
+                showNotification('❌ เข้าสู่ระบบไม่สำเร็จ: ' + error.message);
+            }
+        };
+
+        window.signOutUser = async function() {
+            try {
+                await signOut(auth);
+                showNotification('👋 ออกจากระบบแล้ว');
+            } catch (error) {
+                console.error('Sign out error:', error);
+            }
+        };
+
+        // Save data to Firestore
+        async function saveToCloud(data) {
+            if (!currentUser) return;
+            try {
+                await setDoc(doc(db, "users", currentUser.uid), {
+                    records: data,
+                    updatedAt: new Date().toISOString()
+                });
+                updateSyncStatus('✅ บันทึกสำเร็จ');
+            } catch (error) {
+                console.error('Save error:', error);
+                updateSyncStatus('❌ บันทึกไม่สำเร็จ');
+            }
+        }
+
+        // Load data from Firestore
+        async function loadFromCloud() {
+            if (!currentUser) return null;
+            try {
+                const docRef = doc(db, "users", currentUser.uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    return docSnap.data().records || [];
+                }
+                return null;
+            } catch (error) {
+                console.error('Load error:', error);
+                return null;
+            }
+        }
+
+        // Real-time listener for data sync
+        function setupRealtimeSync() {
+            if (!currentUser || unsubscribeSnapshot) return;
+            
+            const docRef = doc(db, "users", currentUser.uid);
+            unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const cloudData = docSnap.data().records || [];
+                    // Only update if different from current records
+                    if (JSON.stringify(cloudData) !== JSON.stringify(window.records)) {
+                        window.records = cloudData;
+                        localStorage.setItem('wealthData', JSON.stringify(cloudData));
+                        window.renderDashboard();
+                        updateSyncStatus('🔄 ข้อมูล sync แล้ว');
+                    }
+                }
+            }, (error) => {
+                console.error('Snapshot error:', error);
+            });
+        }
+
+        function updateSyncStatus(text) {
+            const syncText = document.getElementById('syncText');
+            if (syncText) {
+                syncText.textContent = text;
+                setTimeout(() => {
+                    if (currentUser) {
+                        syncText.textContent = '☁️ ข้อมูล sync กับ Cloud';
+                    }
+                }, 2000);
+            }
+        }
+
+        // Auth state observer
+        onAuthStateChanged(auth, async (user) => {
+            const signInBtn = document.getElementById('signInBtn');
+            const userInfo = document.getElementById('userInfo');
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+            const syncStatus = document.getElementById('syncStatus');
+
+            if (user) {
+                currentUser = user;
+                
+                // Update UI
+                signInBtn.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                userInfo.classList.add('flex');
+                userAvatar.src = user.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.displayName || 'U');
+                userName.textContent = user.displayName || user.email;
+                syncStatus.classList.remove('hidden');
+
+                // Load data from cloud
+                const cloudData = await loadFromCloud();
+                if (cloudData && cloudData.length > 0) {
+                    window.records = cloudData;
+                    localStorage.setItem('wealthData', JSON.stringify(cloudData));
+                    window.renderDashboard();
+                    updateSyncStatus('✅ โหลดข้อมูลจาก Cloud สำเร็จ');
+                } else if (window.records.length > 0) {
+                    // First time login with existing local data - upload to cloud
+                    await saveToCloud(window.records);
+                    updateSyncStatus('✅ อัปโหลดข้อมูลไป Cloud สำเร็จ');
+                }
+
+                // Setup real-time sync
+                setupRealtimeSync();
+
+                // Override saveData to also save to cloud
+                window.saveDataOriginal = window.saveData;
+                window.saveData = function() {
+                    window.records.sort((a, b) => new Date(a.month) - new Date(b.month));
+                    localStorage.setItem('wealthData', JSON.stringify(window.records));
+                    window.renderDashboard();
+                    window.resetForm();
+                    // Save to cloud
+                    saveToCloud(window.records);
+                };
+
+            } else {
+                currentUser = null;
+                
+                // Update UI
+                signInBtn.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+                userInfo.classList.remove('flex');
+                syncStatus.classList.add('hidden');
+
+                // Unsubscribe from real-time updates
+                if (unsubscribeSnapshot) {
+                    unsubscribeSnapshot();
+                    unsubscribeSnapshot = null;
+                }
+
+                // Restore original saveData
+                if (window.saveDataOriginal) {
+                    window.saveData = window.saveDataOriginal;
+                }
+            }
+        });
+    </script>
+
     <script>
         // --- DATA STRUCTURE & STATE ---
-        let records = [];
-        const THB_USD_RATE = 34.5; // Fixed for simple estimation, can be made dynamic input
+        window.records = [];
+        const THB_USD_RATE = 34.5;
         let expenseRowCounter = 0;
         
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
             renderDashboard();
-            addExpenseRow(); // Add default first row
+            addExpenseRow();
             calculateRemaining();
         });
 
         // --- CORE FUNCTIONS ---
 
-        function saveData() {
-            // Sort records by date before saving
+        window.saveData = function() {
             records.sort((a, b) => new Date(a.month) - new Date(b.month));
             localStorage.setItem('wealthData', JSON.stringify(records));
             renderDashboard();
@@ -225,14 +423,9 @@
         function loadData() {
             const stored = localStorage.getItem('wealthData');
             if (stored) {
-                records = JSON.parse(stored);
+                window.records = JSON.parse(stored);
             } else {
-                // Mock Data for first use
-                records = [
-                    { month: '2025-10', salary: 40000, emergency: 5000, expenses: [{name: 'ค่ากิน', amount: 8000}, {name: 'ค่าบ้าน', amount: 4000}], dca: 4000, indexPrice: 5700 },
-                    { month: '2025-11', salary: 40000, emergency: 5500, expenses: [{name: 'ค่ากิน', amount: 8500}, {name: 'ค่าบ้าน', amount: 4500}], dca: 4000, indexPrice: 5750 },
-                    { month: '2025-12', salary: 42000, emergency: 6000, expenses: [{name: 'ค่ากิน', amount: 7500}, {name: 'ค่าบ้าน', amount: 4000}], dca: 4000, indexPrice: 5800 },
-                ];
+                window.records = [];
             }
         }
 
@@ -241,7 +434,7 @@
             const downloadAnchorNode = document.createElement('a');
             downloadAnchorNode.setAttribute("href", dataStr);
             downloadAnchorNode.setAttribute("download", "wealth_backup_" + new Date().toISOString().slice(0,10) + ".json");
-            document.body.appendChild(downloadAnchorNode); // required for firefox
+            document.body.appendChild(downloadAnchorNode);
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
         }
@@ -252,11 +445,11 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    records = JSON.parse(e.target.result);
-                    saveData(); // Save to local and re-render
-                    alert("นำเข้าข้อมูลเรียบร้อย!");
+                    window.records = JSON.parse(e.target.result);
+                    saveData();
+                    showNotification("✅ นำเข้าข้อมูลเรียบร้อย!");
                 } catch (err) {
-                    alert("ไฟล์ไม่ถูกต้อง");
+                    showNotification("❌ ไฟล์ไม่ถูกต้อง");
                 }
             };
             reader.readAsText(file);
@@ -326,12 +519,10 @@
             
             const remaining = salary - totalExpenses - dca;
             
-            // Update displays
             document.getElementById('totalExpenseDisplay').textContent = `฿${totalExpenses.toLocaleString()}`;
             document.getElementById('remainingDisplay').textContent = `฿${remaining.toLocaleString()}`;
             document.getElementById('autoEmergencyValue').textContent = `฿${Math.max(0, remaining).toLocaleString()}`;
             
-            // Update remaining color
             const remainingEl = document.getElementById('remainingDisplay');
             if (remaining < 0) {
                 remainingEl.classList.remove('text-gray-800', 'text-green-600');
@@ -341,7 +532,6 @@
                 remainingEl.classList.add('text-green-600');
             }
             
-            // Check custom amount warning
             const emergencyType = document.querySelector('input[name="emergencyType"]:checked').value;
             if (emergencyType === 'custom') {
                 const customAmount = parseFloat(document.getElementById('inputEmergency').value) || 0;
@@ -390,7 +580,6 @@
             const dca = parseFloat(document.getElementById('inputDCA').value) || 0;
             const remaining = salary - totalExpenses - dca;
             
-            // Determine emergency amount based on radio selection
             const emergencyType = document.querySelector('input[name="emergencyType"]:checked').value;
             let emergency;
             if (emergencyType === 'auto') {
@@ -409,37 +598,33 @@
             };
 
             if (editIndex !== "") {
-                records[editIndex] = newRecord;
+                window.records[editIndex] = newRecord;
             } else {
-                // Check if month already exists
-                const existing = records.findIndex(r => r.month === newRecord.month);
+                const existing = window.records.findIndex(r => r.month === newRecord.month);
                 if (existing >= 0) {
                     if(!confirm("เดือนนี้มีข้อมูลอยู่แล้ว ต้องการทับข้อมูลเดิมหรือไม่?")) return;
-                    records[existing] = newRecord;
+                    window.records[existing] = newRecord;
                 } else {
-                    records.push(newRecord);
+                    window.records.push(newRecord);
                 }
             }
             saveData();
         });
 
         function editRecord(index) {
-            const r = records[index];
+            const r = window.records[index];
             document.getElementById('editIndex').value = index;
             document.getElementById('inputMonth').value = r.month;
             document.getElementById('inputSalary').value = r.salary || 0;
             document.getElementById('inputDCA').value = r.dca;
             document.getElementById('inputIndexPrice').value = r.indexPrice;
             
-            // Clear and rebuild expense rows
             document.getElementById('expenseContainer').innerHTML = '';
             expenseRowCounter = 0;
             
-            // Handle both old format (single expense) and new format (expenses array)
             if (r.expenses && Array.isArray(r.expenses)) {
                 r.expenses.forEach(exp => addExpenseRow(exp.name, exp.amount));
             } else if (r.expense) {
-                // Old format compatibility
                 addExpenseRow('ค่าใช้จ่าย', r.expense);
             }
             
@@ -447,12 +632,10 @@
                 addExpenseRow();
             }
             
-            // Set emergency mode
             const salary = r.salary || 0;
             const totalExpenses = r.expenses ? r.expenses.reduce((sum, e) => sum + e.amount, 0) : (r.expense || 0);
             const remaining = salary - totalExpenses - r.dca;
             
-            // Check if emergency matches auto calculation
             if (Math.abs(r.emergency - Math.max(0, remaining)) < 1) {
                 document.querySelector('input[name="emergencyType"][value="auto"]').checked = true;
             } else {
@@ -462,36 +645,29 @@
             toggleEmergencyMode();
             calculateRemaining();
             
-            // Scroll to form
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function deleteRecord(index) {
             if(confirm('ยืนยันที่จะลบข้อมูลเดือนนี้?')) {
-                records.splice(index, 1);
+                window.records.splice(index, 1);
                 saveData();
             }
         }
 
         function duplicateRecord(index) {
-            const r = records[index];
+            const r = window.records[index];
             
-            // Clear editIndex so it creates a new record
             document.getElementById('editIndex').value = "";
             
-            // Set current month as default (user can change)
             const now = new Date();
             const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             document.getElementById('inputMonth').value = currentMonth;
             
-            // Copy salary
             document.getElementById('inputSalary').value = r.salary || 0;
-            
-            // Copy DCA info
             document.getElementById('inputDCA').value = r.dca;
             document.getElementById('inputIndexPrice').value = r.indexPrice;
             
-            // Clear and rebuild expense rows
             document.getElementById('expenseContainer').innerHTML = '';
             expenseRowCounter = 0;
             
@@ -505,7 +681,6 @@
                 addExpenseRow();
             }
             
-            // Set emergency mode
             const salary = r.salary || 0;
             const totalExpenses = r.expenses ? r.expenses.reduce((sum, e) => sum + e.amount, 0) : (r.expense || 0);
             const remaining = salary - totalExpenses - r.dca;
@@ -519,21 +694,16 @@
             toggleEmergencyMode();
             calculateRemaining();
             
-            // Scroll to form
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            // Show notification
             showNotification('📋 คัดลอกข้อมูลแล้ว กรุณาเลือกเดือนใหม่');
         }
 
-        function showNotification(message) {
-            // Create notification element
+        window.showNotification = function(message) {
             const notification = document.createElement('div');
             notification.className = 'fixed top-20 right-4 bg-indigo-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-pulse';
             notification.innerHTML = message;
             document.body.appendChild(notification);
             
-            // Remove after 3 seconds
             setTimeout(() => {
                 notification.style.transition = 'opacity 0.3s';
                 notification.style.opacity = '0';
@@ -541,7 +711,7 @@
             }, 3000);
         }
 
-        function resetForm() {
+        window.resetForm = function() {
             form.reset();
             document.getElementById('editIndex').value = "";
             document.getElementById('expenseContainer').innerHTML = '';
@@ -556,7 +726,6 @@
 
         let myChart = null;
 
-        // Helper function to get total expenses from a record
         function getRecordTotalExpenses(r) {
             if (r.expenses && Array.isArray(r.expenses)) {
                 return r.expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -564,41 +733,36 @@
             return r.expense || 0;
         }
 
-        // Helper function to check if a month is in the future
         function isFutureMonth(monthStr) {
             const now = new Date();
             const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             return monthStr > currentMonth;
         }
 
-        // Get current month string
         function getCurrentMonth() {
             const now = new Date();
             return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         }
 
-        function renderDashboard() {
+        window.renderDashboard = function() {
             const tbody = document.getElementById('dataTableBody');
             tbody.innerHTML = '';
 
             let totalInvestedTHB = 0;
             let totalUnits = 0;
 
-            records.forEach((r, index) => {
+            window.records.forEach((r, index) => {
                 const totalExpense = getRecordTotalExpenses(r);
                 const isFuture = isFutureMonth(r.month);
                 
-                // Calculate units for this row
                 let rowUnits = 0;
                 if (r.dca > 0 && r.indexPrice > 0) {
                     const investedUSD = r.dca / THB_USD_RATE;
                     rowUnits = investedUSD / r.indexPrice;
                 }
                 
-                // Table Row
                 const tr = document.createElement('tr');
                 
-                // Style based on whether it's future or not
                 if (isFuture) {
                     tr.className = "bg-gray-100 opacity-60 cursor-pointer transition hover:opacity-80";
                 } else {
@@ -607,20 +771,17 @@
                 
                 tr.onclick = (e) => { if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I') editRecord(index); };
                 
-                // Create expense tooltip if multiple items
                 let expenseDisplay = totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                 if (r.expenses && r.expenses.length > 1) {
                     const expenseList = r.expenses.map(e => `${e.name}: ฿${e.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`).join('\n');
                     expenseDisplay = `<span title="${expenseList}" class="cursor-help border-b border-dashed border-gray-400">${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`;
                 }
                 
-                // Month display with future badge
                 let monthDisplay = r.month;
                 if (isFuture) {
                     monthDisplay = `${r.month} <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium">📅 อนาคต</span>`;
                 }
                 
-                // Units display
                 let unitsDisplay = rowUnits > 0 ? rowUnits.toFixed(6) : '-';
                 
                 tr.innerHTML = `
@@ -638,14 +799,12 @@
                 `;
                 tbody.appendChild(tr);
 
-                // Calculation for Portfolio - ONLY for current month and past months
                 if (!isFuture && r.dca > 0 && r.indexPrice > 0) {
                     totalInvestedTHB += r.dca;
                     totalUnits += rowUnits;
                 }
             });
 
-            // Update Portfolio Widget
             const currentSp500 = parseFloat(document.getElementById('currentSp500').value) || 0;
             const currentValueUSD = totalUnits * currentSp500;
             const currentValueTHB = currentValueUSD * THB_USD_RATE;
@@ -658,21 +817,17 @@
             const returnEl = document.getElementById('portReturn');
             returnEl.innerHTML = `ต้นทุน: ฿${totalInvestedTHB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="${profit >= 0 ? 'text-green-300' : 'text-red-300'} ml-2">(${profit >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)</span>`;
 
-            // Update Units and NAV display
             document.getElementById('totalUnits').innerText = totalUnits.toFixed(6);
             document.getElementById('currentNAV').innerText = currentSp500.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-            // Update Chart
             updateChart();
         }
 
         function updateChart() {
             const ctx = document.getElementById('mainChart').getContext('2d');
             
-            // Filter to only include current and past months for chart
-            const validRecords = records.filter(r => !isFutureMonth(r.month));
+            const validRecords = window.records.filter(r => !isFutureMonth(r.month));
             
-            // Prepare Data arrays
             const labels = validRecords.map(r => r.month);
             const dataEmergency = validRecords.map(r => r.emergency);
             const dataDCA = validRecords.map(r => r.dca);
@@ -688,20 +843,20 @@
                         {
                             label: 'เงินออมฉุกเฉิน',
                             data: dataEmergency,
-                            backgroundColor: '#fbbf24', // Amber
+                            backgroundColor: '#fbbf24',
                             stack: 'Stack 0',
                         },
                         {
                             label: 'DCA Investment',
                             data: dataDCA,
-                            backgroundColor: '#4f46e5', // Indigo
+                            backgroundColor: '#4f46e5',
                             stack: 'Stack 0',
                         },
                         {
                             label: 'ค่าใช้จ่าย',
                             data: dataExpense,
                             type: 'line',
-                            borderColor: '#ef4444', // Red
+                            borderColor: '#ef4444',
                             borderWidth: 2,
                             tension: 0.4,
                             pointRadius: 3,
