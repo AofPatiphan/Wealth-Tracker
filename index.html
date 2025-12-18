@@ -103,31 +103,34 @@
             <div class="bg-indigo-600 rounded-xl p-4 sm:p-6 text-white shadow-lg portfolio-card">
                 <div class="flex justify-between items-start gap-2">
                     <div class="flex-1 min-w-0">
-                        <p class="text-indigo-200 text-[10px] sm:text-sm">NAV ปัจจุบัน</p>
-                        <div class="flex items-baseline mt-1">
-                            <input type="number" id="currentNAV" value="28.00" step="0.0001" class="bg-transparent text-xl sm:text-3xl font-bold w-20 sm:w-28 focus:outline-none border-b border-indigo-400" onchange="renderDashboard()">
-                            <span class="ml-1 text-[10px] sm:text-sm">บาท</span>
-                        </div>
+                        <p class="text-indigo-200 text-[10px] sm:text-sm">📊 พอร์ตการลงทุน</p>
+                        <p class="text-lg sm:text-2xl font-bold mt-1 truncate" id="portValue">฿0.00</p>
                     </div>
                     <div class="text-right flex-1 min-w-0">
-                        <p class="text-indigo-200 text-[10px] sm:text-sm">มูลค่าพอร์ต DCA</p>
-                        <p class="text-lg sm:text-2xl font-bold mt-1 truncate" id="portValue">Loading...</p>
-                        <p class="text-[10px] sm:text-xs text-indigo-300 truncate" id="portReturn">---</p>
+                        <p class="text-indigo-200 text-[10px] sm:text-sm">กำไร/ขาดทุน</p>
+                        <p class="text-base sm:text-xl font-bold mt-1 truncate" id="portReturn">฿0</p>
+                        <p class="text-[10px] sm:text-xs text-indigo-300" id="portReturnPercent">0%</p>
                     </div>
                 </div>
-                <!-- Units and NAV Info -->
+                <!-- Total Stats -->
                 <div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-indigo-500 grid grid-cols-2 gap-2 sm:gap-4">
                     <div>
-                        <p class="text-indigo-200 text-[10px] sm:text-xs">หน่วยลงทุนรวม</p>
-                        <p class="text-base sm:text-xl font-bold mt-0.5 sm:mt-1" id="totalUnits">0.00</p>
-                        <p class="text-[10px] sm:text-xs text-indigo-300">Units</p>
-                    </div>
-                    <div class="text-right">
                         <p class="text-indigo-200 text-[10px] sm:text-xs">ต้นทุนรวม</p>
                         <p class="text-base sm:text-xl font-bold mt-0.5 sm:mt-1 truncate" id="totalCost">฿0</p>
-                        <p class="text-[10px] sm:text-xs text-indigo-300">บาท</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-indigo-200 text-[10px] sm:text-xs">จำนวนกองทุน</p>
+                        <p class="text-base sm:text-xl font-bold mt-0.5 sm:mt-1" id="fundCount">0</p>
                     </div>
                 </div>
+                <!-- Investment Breakdown -->
+                <div id="investmentBreakdown" class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-indigo-500 space-y-2 max-h-32 overflow-y-auto">
+                    <!-- Investment items will be rendered here -->
+                </div>
+                <!-- NAV Update Button -->
+                <button onclick="openNAVModal()" class="mt-3 w-full py-1.5 bg-indigo-500 hover:bg-indigo-400 rounded text-[10px] sm:text-sm transition">
+                    <i class="fas fa-sync-alt mr-1"></i> อัพเดท NAV ปัจจุบัน
+                </button>
             </div>
 
             <div class="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 card-mobile">
@@ -169,59 +172,27 @@
                         </div>
                     </div>
 
-                    <!-- ส่วนการลงทุน DCA -->
+                    <!-- ส่วนการลงทุน DCA (Multi-Investment) -->
                     <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200 form-section">
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
-                            <p class="text-xs font-bold text-indigo-600 uppercase">📈 DCA (SCBS&P500E)</p>
-                            <!-- DCA Mode Toggle -->
-                            <div class="flex items-center space-x-1 sm:space-x-2 text-[10px] sm:text-xs">
-                                <span class="text-gray-500 whitespace-nowrap">รายเดือน</span>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="weeklyMode" class="sr-only peer" onchange="toggleDCAMode()">
-                                    <div class="w-8 h-4 sm:w-9 sm:h-5 bg-gray-300 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 sm:after:h-4 sm:after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                                </label>
-                                <span class="text-gray-500 whitespace-nowrap">รายสัปดาห์</span>
-                            </div>
+                        <div class="flex justify-between items-center mb-2 sm:mb-3">
+                            <p class="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase">📈 การลงทุน DCA</p>
+                            <button type="button" onclick="addInvestmentRow()" class="text-[10px] sm:text-xs bg-indigo-500 text-white px-2 py-1 rounded hover:bg-indigo-600 transition">
+                                <i class="fas fa-plus mr-1"></i>เพิ่ม
+                            </button>
                         </div>
                         
-                        <!-- Monthly DCA Mode -->
-                        <div id="monthlyDCASection">
-                            <div class="grid grid-cols-2 gap-2 sm:gap-4">
-                                <div>
-                                    <label class="block text-[10px] sm:text-sm font-medium text-gray-700">ยอดเงิน DCA (บาท)</label>
-                                    <input type="number" id="inputDCA" placeholder="0" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md border p-1.5 sm:p-2 text-sm" oninput="calculateRemaining()">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] sm:text-sm font-medium text-gray-700">NAV ตอนซื้อ (บาท)</label>
-                                    <input type="number" id="inputIndexPrice" placeholder="เช่น 27.50" step="0.0001" class="mt-1 block w-full border-gray-300 rounded-md border p-1.5 sm:p-2 text-sm">
-                                    <p class="text-[9px] sm:text-xs text-gray-400 mt-1">*ดู NAV ได้ที่ SCB Asset</p>
-                                </div>
-                            </div>
+                        <div id="investmentContainer" class="space-y-2">
+                            <!-- Investment rows will be added here -->
                         </div>
                         
-                        <!-- Weekly DCA Mode -->
-                        <div id="weeklyDCASection" class="hidden">
-                            <div class="mb-2 sm:mb-3">
-                                <label class="block text-[10px] sm:text-sm font-medium text-gray-700">ยอดเงินต่อสัปดาห์ (บาท)</label>
-                                <input type="number" id="weeklyAmount" placeholder="1000" step="0.01" value="1000" class="mt-1 block w-full border-gray-300 rounded-md border p-1.5 sm:p-2 text-sm" oninput="updateWeeklyTotal()">
-                            </div>
-                            <div class="mb-2 flex justify-between items-center">
-                                <span class="text-[10px] sm:text-sm font-medium text-gray-700">วันพุธในเดือนนี้:</span>
-                                <span id="wednesdayCount" class="text-[10px] sm:text-xs bg-indigo-100 text-indigo-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">0 วัน</span>
-                            </div>
-                            <div id="weeklyInputs" class="space-y-1.5 sm:space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
-                                <!-- Weekly inputs will be generated here -->
-                            </div>
-                            <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-indigo-200">
-                                <div class="flex justify-between text-[10px] sm:text-sm">
-                                    <span class="text-gray-600">รวม DCA เดือนนี้:</span>
-                                    <span id="weeklyTotalDCA" class="font-bold text-indigo-600">฿0</span>
-                                </div>
-                                <div class="flex justify-between text-[10px] sm:text-sm mt-1">
-                                    <span class="text-gray-600">รวม Units:</span>
-                                    <span id="weeklyTotalUnits" class="font-bold text-indigo-600">0</span>
-                                </div>
-                            </div>
+                        <button type="button" onclick="addInvestmentRow()" class="mt-2 w-full py-1.5 sm:py-2 border-2 border-dashed border-indigo-300 rounded-md text-indigo-500 text-[10px] sm:text-sm hover:bg-indigo-100 transition">
+                            <i class="fas fa-plus mr-1"></i> เพิ่มการลงทุน
+                        </button>
+                        
+                        <!-- สรุปการลงทุนรวม -->
+                        <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-indigo-200 flex justify-between items-center">
+                            <span class="text-xs sm:text-sm font-medium text-gray-700">รวม DCA:</span>
+                            <span id="totalInvestmentDisplay" class="text-sm sm:text-lg font-bold text-indigo-600">฿0</span>
                         </div>
                     </div>
 
@@ -295,9 +266,8 @@
                                 <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-purple-600 uppercase hidden sm:table-cell">เงินเดือน</th>
                                 <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-green-600 uppercase">ออม</th>
                                 <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-red-500 uppercase hidden sm:table-cell">ค่าใช้จ่าย</th>
-                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-blue-600 uppercase">DCA</th>
-                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-gray-500 uppercase">NAV</th>
-                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-cyan-600 uppercase">Units</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-indigo-600 uppercase">ลงทุน</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-left text-[9px] sm:text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">กองทุน</th>
                                 <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-center text-[9px] sm:text-xs font-medium text-gray-500 uppercase"></th>
                             </tr>
                         </thead>
@@ -308,6 +278,78 @@
             </div>
         </section>
     </main>
+
+    <!-- NAV Update Modal -->
+    <div id="navModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+            <div class="px-4 py-3 border-b bg-indigo-50 flex justify-between items-center">
+                <h3 class="font-semibold text-indigo-800"><i class="fas fa-sync-alt mr-2"></i>อัพเดท NAV ปัจจุบัน</h3>
+                <button onclick="closeNAVModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="navModalContent" class="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
+                <!-- NAV inputs will be rendered here -->
+            </div>
+            <div class="px-4 py-3 border-t bg-gray-50 flex justify-end gap-2">
+                <button onclick="closeNAVModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">ยกเลิก</button>
+                <button onclick="saveNAVUpdates()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Investment Type Modal (for selecting fund) -->
+    <div id="fundSelectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-sm w-full">
+            <div class="px-4 py-3 border-b bg-indigo-50 flex justify-between items-center">
+                <h3 class="font-semibold text-indigo-800"><i class="fas fa-list mr-2"></i>เลือกกองทุน</h3>
+                <button onclick="closeFundSelectModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="fundSelectList" class="p-4 space-y-2 max-h-[50vh] overflow-y-auto">
+                <!-- Fund options will be rendered here -->
+            </div>
+            <div class="px-4 py-3 border-t bg-gray-50">
+                <button onclick="showAddNewFundForm()" class="w-full py-2 border-2 border-dashed border-indigo-300 rounded text-indigo-500 text-sm hover:bg-indigo-50">
+                    <i class="fas fa-plus mr-1"></i> เพิ่มกองทุนใหม่
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add New Fund Modal -->
+    <div id="addFundModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-sm w-full">
+            <div class="px-4 py-3 border-b bg-green-50 flex justify-between items-center">
+                <h3 class="font-semibold text-green-800"><i class="fas fa-plus-circle mr-2"></i>เพิ่มกองทุนใหม่</h3>
+                <button onclick="closeAddFundModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4 space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">ชื่อกองทุน</label>
+                    <input type="text" id="newFundName" placeholder="เช่น SCBS&P500E" class="mt-1 w-full border rounded-md p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">NAV ปัจจุบัน (บาท)</label>
+                    <input type="number" id="newFundNAV" placeholder="28.00" step="0.0001" class="mt-1 w-full border rounded-md p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">สี (สำหรับกราฟ)</label>
+                    <div class="flex gap-2 mt-1">
+                        <input type="color" id="newFundColor" value="#4F46E5" class="w-12 h-10 rounded border cursor-pointer">
+                        <input type="text" id="newFundColorText" value="#4F46E5" class="flex-1 border rounded-md p-2 text-sm" onchange="document.getElementById('newFundColor').value = this.value">
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 py-3 border-t bg-gray-50 flex justify-end gap-2">
+                <button onclick="closeAddFundModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">ยกเลิก</button>
+                <button onclick="saveNewFund()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">เพิ่มกองทุน</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase SDK -->
     <script type="module">
@@ -361,6 +403,7 @@
             try {
                 await setDoc(doc(db, "users", currentUser.uid), {
                     records: data,
+                    fundTypes: window.fundTypes,
                     updatedAt: new Date().toISOString()
                 });
                 updateSyncStatus('✅ บันทึกสำเร็จ');
@@ -377,7 +420,13 @@
                 const docRef = doc(db, "users", currentUser.uid);
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
-                    return docSnap.data().records || [];
+                    const data = docSnap.data();
+                    // Also load fund types if available
+                    if (data.fundTypes && Array.isArray(data.fundTypes)) {
+                        window.fundTypes = data.fundTypes;
+                        localStorage.setItem('fundTypes', JSON.stringify(data.fundTypes));
+                    }
+                    return data.records || [];
                 }
                 return null;
             } catch (error) {
@@ -393,7 +442,16 @@
             const docRef = doc(db, "users", currentUser.uid);
             unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
-                    const cloudData = docSnap.data().records || [];
+                    const data = docSnap.data();
+                    const cloudData = data.records || [];
+                    const cloudFundTypes = data.fundTypes || [];
+                    
+                    // Update fund types if different
+                    if (cloudFundTypes.length > 0 && JSON.stringify(cloudFundTypes) !== JSON.stringify(window.fundTypes)) {
+                        window.fundTypes = cloudFundTypes;
+                        localStorage.setItem('fundTypes', JSON.stringify(cloudFundTypes));
+                    }
+                    
                     // Only update if different from current records
                     if (JSON.stringify(cloudData) !== JSON.stringify(window.records)) {
                         window.records = cloudData;
@@ -492,12 +550,27 @@
         // --- DATA STRUCTURE & STATE ---
         window.records = [];
         let expenseRowCounter = 0;
+        let investmentRowCounter = 0;
+        let currentSelectingRowId = null;
+        
+        // Default investment types
+        const DEFAULT_FUND_TYPES = [
+            { id: 'scbs_p500e', name: 'SCBS&P500E', color: '#4F46E5', currentNAV: 28.00 }
+        ];
+        
+        // Load or initialize fund types
+        window.fundTypes = JSON.parse(localStorage.getItem('fundTypes')) || [...DEFAULT_FUND_TYPES];
+        
+        function saveFundTypes() {
+            localStorage.setItem('fundTypes', JSON.stringify(window.fundTypes));
+        }
         
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
             renderDashboard();
             addExpenseRow();
+            addInvestmentRow('scbs_p500e'); // Add default investment
             calculateRemaining();
         });
 
@@ -600,118 +673,222 @@
             return total;
         }
 
-        // --- DCA MODE FUNCTIONS ---
-
-        function toggleDCAMode() {
-            const isWeekly = document.getElementById('weeklyMode').checked;
-            const monthlySection = document.getElementById('monthlyDCASection');
-            const weeklySection = document.getElementById('weeklyDCASection');
+        // --- INVESTMENT MANAGEMENT FUNCTIONS ---
+        
+        function getFundById(id) {
+            return window.fundTypes.find(f => f.id === id);
+        }
+        
+        function addInvestmentRow(fundId = null, amount = '', nav = '') {
+            const container = document.getElementById('investmentContainer');
+            const rowId = `investment_${investmentRowCounter++}`;
+            const fund = fundId ? getFundById(fundId) : null;
             
-            if (isWeekly) {
-                monthlySection.classList.add('hidden');
-                weeklySection.classList.remove('hidden');
-                generateWeeklyInputs();
-            } else {
-                monthlySection.classList.remove('hidden');
-                weeklySection.classList.add('hidden');
-            }
+            const row = document.createElement('div');
+            row.className = 'flex gap-1 sm:gap-2 items-center bg-white p-2 rounded-lg border border-indigo-100';
+            row.id = rowId;
+            row.dataset.fundId = fundId || '';
+            
+            const fundName = fund ? fund.name : 'เลือกกองทุน';
+            const fundColor = fund ? fund.color : '#9CA3AF';
+            
+            row.innerHTML = `
+                <button type="button" onclick="openFundSelect('${rowId}')" 
+                    class="flex-1 min-w-0 text-left rounded-md border-gray-300 border p-1.5 sm:p-2 text-xs sm:text-sm bg-gray-50 hover:bg-gray-100 transition truncate"
+                    style="border-left: 3px solid ${fundColor}">
+                    ${fundName}
+                </button>
+                <input type="number" placeholder="ยอดเงิน" value="${amount}" step="0.01"
+                    class="w-16 sm:w-24 rounded-md border-gray-300 border p-1.5 sm:p-2 text-xs sm:text-sm text-right focus:border-indigo-500 investment-amount" 
+                    oninput="calculateRemaining()">
+                <input type="number" placeholder="NAV" value="${nav}" step="0.0001"
+                    class="w-14 sm:w-20 rounded-md border-gray-300 border p-1.5 sm:p-2 text-xs sm:text-sm text-right focus:border-indigo-500 investment-nav">
+                <button type="button" onclick="removeInvestmentRow('${rowId}')" 
+                    class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-red-100 text-red-500 rounded hover:bg-red-500 hover:text-white transition flex-shrink-0">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            `;
+            container.appendChild(row);
             calculateRemaining();
         }
-
-        function getWednesdaysInMonth(year, month) {
-            const wednesdays = [];
-            const date = new Date(year, month - 1, 1);
+        
+        function removeInvestmentRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                calculateRemaining();
+            }
+        }
+        
+        function getInvestmentItems() {
+            const items = [];
+            document.querySelectorAll('#investmentContainer > div').forEach(row => {
+                const fundId = row.dataset.fundId;
+                const amount = parseFloat(row.querySelector('.investment-amount').value) || 0;
+                const nav = parseFloat(row.querySelector('.investment-nav').value) || 0;
+                if (fundId && amount > 0) {
+                    const units = nav > 0 ? amount / nav : 0;
+                    items.push({ fundId, amount, nav, units });
+                }
+            });
+            return items;
+        }
+        
+        function getTotalInvestments() {
+            let total = 0;
+            document.querySelectorAll('.investment-amount').forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            return total;
+        }
+        
+        // --- FUND SELECT MODAL ---
+        
+        function openFundSelect(rowId) {
+            currentSelectingRowId = rowId;
+            const modal = document.getElementById('fundSelectModal');
+            const list = document.getElementById('fundSelectList');
             
-            // Find first Wednesday
-            while (date.getDay() !== 3) {
-                date.setDate(date.getDate() + 1);
+            list.innerHTML = window.fundTypes.map(fund => `
+                <button onclick="selectFund('${fund.id}')" 
+                    class="w-full text-left p-3 rounded-lg border hover:bg-indigo-50 transition flex items-center gap-3"
+                    style="border-left: 4px solid ${fund.color}">
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-800">${fund.name}</div>
+                        <div class="text-xs text-gray-500">NAV: ฿${fund.currentNAV.toFixed(2)}</div>
+                    </div>
+                    <button onclick="event.stopPropagation(); deleteFund('${fund.id}')" 
+                        class="text-red-400 hover:text-red-600 p-1" title="ลบกองทุน">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                </button>
+            `).join('') || '<p class="text-center text-gray-400 py-4">ไม่มีกองทุน กรุณาเพิ่มกองทุนใหม่</p>';
+            
+            modal.classList.remove('hidden');
+        }
+        
+        function closeFundSelectModal() {
+            document.getElementById('fundSelectModal').classList.add('hidden');
+            currentSelectingRowId = null;
+        }
+        
+        function selectFund(fundId) {
+            if (!currentSelectingRowId) return;
+            
+            const row = document.getElementById(currentSelectingRowId);
+            const fund = getFundById(fundId);
+            
+            if (row && fund) {
+                row.dataset.fundId = fundId;
+                const btn = row.querySelector('button');
+                btn.innerHTML = fund.name;
+                btn.style.borderLeftColor = fund.color;
             }
             
-            // Get all Wednesdays in the month
-            while (date.getMonth() === month - 1) {
-                wednesdays.push(new Date(date));
-                date.setDate(date.getDate() + 7);
-            }
+            closeFundSelectModal();
+            calculateRemaining();
+        }
+        
+        function deleteFund(fundId) {
+            if (!confirm('ลบกองทุนนี้หรือไม่?')) return;
             
-            return wednesdays;
+            window.fundTypes = window.fundTypes.filter(f => f.id !== fundId);
+            saveFundTypes();
+            
+            // Re-open the modal to refresh
+            if (currentSelectingRowId) {
+                openFundSelect(currentSelectingRowId);
+            }
         }
-
-        function formatThaiDate(date) {
-            const days = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
-            const day = date.getDate();
-            const month = date.getMonth() + 1;
-            return `พ. ${day}/${month}`;
+        
+        // --- ADD NEW FUND MODAL ---
+        
+        function showAddNewFundForm() {
+            closeFundSelectModal();
+            document.getElementById('addFundModal').classList.remove('hidden');
+            document.getElementById('newFundName').value = '';
+            document.getElementById('newFundNAV').value = '';
+            document.getElementById('newFundColor').value = '#4F46E5';
+            document.getElementById('newFundColorText').value = '#4F46E5';
         }
-
-        function generateWeeklyInputs() {
-            const monthInput = document.getElementById('inputMonth').value;
-            if (!monthInput) {
-                document.getElementById('weeklyInputs').innerHTML = '<p class="text-[10px] sm:text-sm text-gray-400 text-center py-3 sm:py-4">กรุณาเลือกเดือนก่อน</p>';
-                document.getElementById('wednesdayCount').textContent = '0 วัน';
+        
+        function closeAddFundModal() {
+            document.getElementById('addFundModal').classList.add('hidden');
+        }
+        
+        function saveNewFund() {
+            const name = document.getElementById('newFundName').value.trim();
+            const nav = parseFloat(document.getElementById('newFundNAV').value) || 0;
+            const color = document.getElementById('newFundColor').value;
+            
+            if (!name) {
+                alert('กรุณากรอกชื่อกองทุน');
                 return;
             }
             
-            const [year, month] = monthInput.split('-').map(Number);
-            const wednesdays = getWednesdaysInMonth(year, month);
-            const container = document.getElementById('weeklyInputs');
-            const weeklyAmount = parseFloat(document.getElementById('weeklyAmount').value) || 1000;
+            const id = name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now();
             
-            document.getElementById('wednesdayCount').textContent = `${wednesdays.length} วัน`;
+            window.fundTypes.push({ id, name, color, currentNAV: nav });
+            saveFundTypes();
             
-            container.innerHTML = wednesdays.map((wed, index) => `
-                <div class="flex gap-1 sm:gap-2 items-center bg-white p-1.5 sm:p-2 rounded-lg border border-indigo-100 weekly-input-row">
-                    <span class="text-[9px] sm:text-xs text-gray-500 w-12 sm:w-16 flex-shrink-0">${formatThaiDate(wed)}</span>
-                    <input type="number" value="${weeklyAmount}" step="0.01" 
-                        class="w-14 sm:w-20 text-[10px] sm:text-sm border-gray-300 rounded border p-1 text-right weekly-amount" 
-                        oninput="updateWeeklyTotal()">
-                    <span class="text-[9px] sm:text-xs text-gray-400 hidden sm:inline">บาท</span>
-                    <span class="text-[9px] sm:text-xs text-gray-400">NAV:</span>
-                    <input type="number" placeholder="27.50" step="0.0001" 
-                        class="w-14 sm:w-20 text-[10px] sm:text-sm border-gray-300 rounded border p-1 text-right weekly-nav" 
-                        oninput="updateWeeklyTotal()">
-                </div>
-            `).join('');
+            closeAddFundModal();
             
-            updateWeeklyTotal();
+            // If we were selecting for a row, open the modal again
+            if (currentSelectingRowId) {
+                openFundSelect(currentSelectingRowId);
+            }
+            
+            showNotification('✅ เพิ่มกองทุนสำเร็จ!');
         }
-
-        function updateWeeklyTotal() {
-            const amounts = document.querySelectorAll('.weekly-amount');
-            const navs = document.querySelectorAll('.weekly-nav');
+        
+        // --- NAV UPDATE MODAL ---
+        
+        function openNAVModal() {
+            const modal = document.getElementById('navModal');
+            const content = document.getElementById('navModalContent');
             
-            let totalDCA = 0;
-            let totalUnits = 0;
+            content.innerHTML = window.fundTypes.map(fund => `
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg" style="border-left: 4px solid ${fund.color}">
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-800 text-sm">${fund.name}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">NAV:</span>
+                        <input type="number" value="${fund.currentNAV}" step="0.0001" 
+                            class="w-24 border rounded p-1.5 text-sm text-right nav-update-input"
+                            data-fund-id="${fund.id}">
+                        <span class="text-xs text-gray-500">บาท</span>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-center text-gray-400 py-4">ไม่มีกองทุน</p>';
             
-            amounts.forEach((amountInput, index) => {
-                const amount = parseFloat(amountInput.value) || 0;
-                const nav = parseFloat(navs[index]?.value) || 0;
+            modal.classList.remove('hidden');
+        }
+        
+        function closeNAVModal() {
+            document.getElementById('navModal').classList.add('hidden');
+        }
+        
+        function saveNAVUpdates() {
+            document.querySelectorAll('.nav-update-input').forEach(input => {
+                const fundId = input.dataset.fundId;
+                const newNAV = parseFloat(input.value) || 0;
                 
-                totalDCA += amount;
-                if (nav > 0) {
-                    totalUnits += amount / nav;
+                const fund = getFundById(fundId);
+                if (fund) {
+                    fund.currentNAV = newNAV;
                 }
             });
             
-            document.getElementById('weeklyTotalDCA').textContent = `฿${totalDCA.toLocaleString()}`;
-            document.getElementById('weeklyTotalUnits').textContent = totalUnits.toFixed(4);
-            
-            // Update hidden fields for form submission
-            document.getElementById('inputDCA').value = totalDCA;
-            
-            // Calculate weighted average NAV
-            if (totalUnits > 0) {
-                const avgNAV = totalDCA / totalUnits;
-                document.getElementById('inputIndexPrice').value = avgNAV.toFixed(4);
-            }
-            
-            calculateRemaining();
+            saveFundTypes();
+            closeNAVModal();
+            renderDashboard();
+            showNotification('✅ อัพเดท NAV สำเร็จ!');
         }
-
-        // Update weekly inputs when month changes
-        document.getElementById('inputMonth')?.addEventListener('change', function() {
-            if (document.getElementById('weeklyMode').checked) {
-                generateWeeklyInputs();
-            }
+        
+        // Sync color input
+        document.getElementById('newFundColor')?.addEventListener('input', function() {
+            document.getElementById('newFundColorText').value = this.value;
         });
 
         // --- CALCULATION ---
@@ -719,11 +896,12 @@
         function calculateRemaining() {
             const salary = parseFloat(document.getElementById('inputSalary').value) || 0;
             const totalExpenses = getTotalExpenses();
-            const dca = parseFloat(document.getElementById('inputDCA').value) || 0;
+            const totalInvestments = getTotalInvestments();
             
-            const remaining = salary - totalExpenses - dca;
+            const remaining = salary - totalExpenses - totalInvestments;
             
             document.getElementById('totalExpenseDisplay').textContent = `฿${totalExpenses.toLocaleString()}`;
+            document.getElementById('totalInvestmentDisplay').textContent = `฿${totalInvestments.toLocaleString()}`;
             document.getElementById('remainingDisplay').textContent = `฿${remaining.toLocaleString()}`;
             document.getElementById('autoEmergencyValue').textContent = `฿${Math.max(0, remaining).toLocaleString()}`;
             
@@ -736,7 +914,7 @@
                 remainingEl.classList.add('text-green-600');
             }
             
-            const emergencyType = document.querySelector('input[name="emergencyType"]:checked').value;
+            const emergencyType = document.querySelector('input[name="emergencyType"]:checked')?.value || 'auto';
             if (emergencyType === 'custom') {
                 const customAmount = parseFloat(document.getElementById('inputEmergency').value) || 0;
                 const warningEl = document.getElementById('emergencyWarning');
@@ -780,11 +958,12 @@
             
             const salary = parseFloat(document.getElementById('inputSalary').value) || 0;
             const expenses = getExpenseItems();
+            const investments = getInvestmentItems();
             const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-            const dca = parseFloat(document.getElementById('inputDCA').value) || 0;
-            const remaining = salary - totalExpenses - dca;
+            const totalInvestments = investments.reduce((sum, i) => sum + i.amount, 0);
+            const remaining = salary - totalExpenses - totalInvestments;
             
-            const emergencyType = document.querySelector('input[name="emergencyType"]:checked').value;
+            const emergencyType = document.querySelector('input[name="emergencyType"]:checked')?.value || 'auto';
             let emergency;
             if (emergencyType === 'auto') {
                 emergency = Math.max(0, remaining);
@@ -792,33 +971,15 @@
                 emergency = parseFloat(document.getElementById('inputEmergency').value) || 0;
             }
             
-            // Check if weekly mode and collect weekly data
-            const isWeeklyMode = document.getElementById('weeklyMode').checked;
-            let weeklyData = null;
-            
-            if (isWeeklyMode) {
-                const amounts = document.querySelectorAll('.weekly-amount');
-                const navs = document.querySelectorAll('.weekly-nav');
-                weeklyData = [];
-                
-                amounts.forEach((amountInput, index) => {
-                    const amount = parseFloat(amountInput.value) || 0;
-                    const nav = parseFloat(navs[index]?.value) || 0;
-                    if (amount > 0) {
-                        weeklyData.push({ amount, nav });
-                    }
-                });
-            }
-            
             const newRecord = {
                 month: document.getElementById('inputMonth').value,
                 salary: salary,
                 emergency: emergency,
                 expenses: expenses,
-                dca: dca,
-                indexPrice: parseFloat(document.getElementById('inputIndexPrice').value) || 0,
-                weeklyMode: isWeeklyMode,
-                weeklyData: weeklyData
+                investments: investments,
+                // Keep legacy fields for backward compatibility
+                dca: totalInvestments,
+                indexPrice: investments.length > 0 && investments[0].nav > 0 ? investments[0].nav : 0
             };
 
             if (editIndex !== "") {
@@ -840,9 +1001,8 @@
             document.getElementById('editIndex').value = index;
             document.getElementById('inputMonth').value = r.month;
             document.getElementById('inputSalary').value = r.salary || 0;
-            document.getElementById('inputDCA').value = r.dca;
-            document.getElementById('inputIndexPrice').value = r.indexPrice;
             
+            // Clear and populate expenses
             document.getElementById('expenseContainer').innerHTML = '';
             expenseRowCounter = 0;
             
@@ -856,30 +1016,25 @@
                 addExpenseRow();
             }
             
-            // Restore weekly mode if applicable
-            if (r.weeklyMode && r.weeklyData) {
-                document.getElementById('weeklyMode').checked = true;
-                toggleDCAMode();
-                
-                // Wait for inputs to be generated then fill them
-                setTimeout(() => {
-                    const amounts = document.querySelectorAll('.weekly-amount');
-                    const navs = document.querySelectorAll('.weekly-nav');
-                    
-                    r.weeklyData.forEach((data, i) => {
-                        if (amounts[i]) amounts[i].value = data.amount;
-                        if (navs[i]) navs[i].value = data.nav;
-                    });
-                    updateWeeklyTotal();
-                }, 100);
-            } else {
-                document.getElementById('weeklyMode').checked = false;
-                toggleDCAMode();
+            // Clear and populate investments
+            document.getElementById('investmentContainer').innerHTML = '';
+            investmentRowCounter = 0;
+            
+            if (r.investments && Array.isArray(r.investments)) {
+                r.investments.forEach(inv => addInvestmentRow(inv.fundId, inv.amount, inv.nav));
+            } else if (r.dca > 0) {
+                // Legacy support: convert old dca/indexPrice to new format
+                addInvestmentRow('scbs_p500e', r.dca, r.indexPrice);
+            }
+            
+            if (document.querySelectorAll('#investmentContainer > div').length === 0) {
+                addInvestmentRow('scbs_p500e');
             }
             
             const salary = r.salary || 0;
             const totalExpenses = r.expenses ? r.expenses.reduce((sum, e) => sum + e.amount, 0) : (r.expense || 0);
-            const remaining = salary - totalExpenses - r.dca;
+            const totalInvestments = r.investments ? r.investments.reduce((sum, i) => sum + i.amount, 0) : (r.dca || 0);
+            const remaining = salary - totalExpenses - totalInvestments;
             
             if (Math.abs(r.emergency - Math.max(0, remaining)) < 1) {
                 document.querySelector('input[name="emergencyType"][value="auto"]').checked = true;
@@ -910,9 +1065,8 @@
             document.getElementById('inputMonth').value = currentMonth;
             
             document.getElementById('inputSalary').value = r.salary || 0;
-            document.getElementById('inputDCA').value = r.dca;
-            document.getElementById('inputIndexPrice').value = r.indexPrice;
             
+            // Clear and populate expenses
             document.getElementById('expenseContainer').innerHTML = '';
             expenseRowCounter = 0;
             
@@ -926,9 +1080,24 @@
                 addExpenseRow();
             }
             
+            // Clear and populate investments (without NAV - user needs to update)
+            document.getElementById('investmentContainer').innerHTML = '';
+            investmentRowCounter = 0;
+            
+            if (r.investments && Array.isArray(r.investments)) {
+                r.investments.forEach(inv => addInvestmentRow(inv.fundId, inv.amount, '')); // No NAV for new month
+            } else if (r.dca > 0) {
+                addInvestmentRow('scbs_p500e', r.dca, '');
+            }
+            
+            if (document.querySelectorAll('#investmentContainer > div').length === 0) {
+                addInvestmentRow('scbs_p500e');
+            }
+            
             const salary = r.salary || 0;
             const totalExpenses = r.expenses ? r.expenses.reduce((sum, e) => sum + e.amount, 0) : (r.expense || 0);
-            const remaining = salary - totalExpenses - r.dca;
+            const totalInvestments = r.investments ? r.investments.reduce((sum, i) => sum + i.amount, 0) : (r.dca || 0);
+            const remaining = salary - totalExpenses - totalInvestments;
             
             if (Math.abs(r.emergency - Math.max(0, remaining)) < 1) {
                 document.querySelector('input[name="emergencyType"][value="auto"]').checked = true;
@@ -940,7 +1109,7 @@
             calculateRemaining();
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            showNotification('📋 คัดลอกข้อมูลแล้ว กรุณาเลือกเดือนใหม่');
+            showNotification('📋 คัดลอกข้อมูลแล้ว กรุณากรอก NAV ใหม่');
         }
 
         window.showNotification = function(message) {
@@ -959,17 +1128,19 @@
         window.resetForm = function() {
             form.reset();
             document.getElementById('editIndex').value = "";
+            
+            // Reset expenses
             document.getElementById('expenseContainer').innerHTML = '';
             expenseRowCounter = 0;
             addExpenseRow();
+            
+            // Reset investments
+            document.getElementById('investmentContainer').innerHTML = '';
+            investmentRowCounter = 0;
+            addInvestmentRow('scbs_p500e');
+            
             document.querySelector('input[name="emergencyType"][value="auto"]').checked = true;
             toggleEmergencyMode();
-            
-            // Reset weekly mode
-            document.getElementById('weeklyMode').checked = false;
-            document.getElementById('monthlyDCASection').classList.remove('hidden');
-            document.getElementById('weeklyDCASection').classList.add('hidden');
-            document.getElementById('weeklyInputs').innerHTML = '';
             
             calculateRemaining();
         }
@@ -996,21 +1167,45 @@
             return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         }
 
+        // Helper to get investments from a record (with legacy support)
+        function getRecordInvestments(r) {
+            if (r.investments && Array.isArray(r.investments)) {
+                return r.investments;
+            }
+            // Legacy support
+            if (r.dca > 0) {
+                return [{ fundId: 'scbs_p500e', amount: r.dca, nav: r.indexPrice || 0, units: r.indexPrice > 0 ? r.dca / r.indexPrice : 0 }];
+            }
+            return [];
+        }
+        
         window.renderDashboard = function() {
             const tbody = document.getElementById('dataTableBody');
             tbody.innerHTML = '';
 
-            let totalInvestedTHB = 0;
-            let totalUnits = 0;
+            // Aggregate data by fund
+            const fundAggregates = {};
+            let totalInvestedAll = 0;
+            let totalCurrentValueAll = 0;
 
             window.records.forEach((r, index) => {
                 const totalExpense = getRecordTotalExpenses(r);
                 const isFuture = isFutureMonth(r.month);
+                const investments = getRecordInvestments(r);
+                const totalInvestment = investments.reduce((sum, i) => sum + i.amount, 0);
                 
-                // Calculate units: DCA (บาท) / NAV (บาท) = Units
-                let rowUnits = 0;
-                if (r.dca > 0 && r.indexPrice > 0) {
-                    rowUnits = r.dca / r.indexPrice;
+                // Aggregate for portfolio (only non-future)
+                if (!isFuture) {
+                    investments.forEach(inv => {
+                        if (inv.amount > 0 && inv.nav > 0) {
+                            const units = inv.amount / inv.nav;
+                            if (!fundAggregates[inv.fundId]) {
+                                fundAggregates[inv.fundId] = { totalInvested: 0, totalUnits: 0 };
+                            }
+                            fundAggregates[inv.fundId].totalInvested += inv.amount;
+                            fundAggregates[inv.fundId].totalUnits += units;
+                        }
+                    });
                 }
                 
                 const tr = document.createElement('tr');
@@ -1023,56 +1218,91 @@
                 
                 tr.onclick = (e) => { if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I') editRecord(index); };
                 
-                let expenseDisplay = totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                let expenseDisplay = totalExpense.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
                 if (r.expenses && r.expenses.length > 1) {
-                    const expenseList = r.expenses.map(e => `${e.name}: ฿${e.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`).join('\n');
-                    expenseDisplay = `<span title="${expenseList}" class="cursor-help border-b border-dashed border-gray-400">${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`;
+                    const expenseList = r.expenses.map(e => `${e.name}: ฿${e.amount.toLocaleString()}`).join('\n');
+                    expenseDisplay = `<span title="${expenseList}" class="cursor-help border-b border-dashed border-gray-400">${totalExpense.toLocaleString()}</span>`;
                 }
                 
                 let monthDisplay = r.month;
                 if (isFuture) {
-                    monthDisplay = `${r.month} <span class="ml-1 px-1 py-0.5 bg-yellow-100 text-yellow-700 text-[8px] sm:text-xs rounded font-medium hidden sm:inline">📅 อนาคต</span>`;
+                    monthDisplay = `${r.month} <span class="ml-1 px-1 py-0.5 bg-yellow-100 text-yellow-700 text-[8px] sm:text-xs rounded font-medium hidden sm:inline">📅</span>`;
                 }
                 
-                let unitsDisplay = rowUnits > 0 ? rowUnits.toFixed(4) : '-';
+                // Investment display
+                const investmentNames = investments.map(inv => {
+                    const fund = getFundById(inv.fundId);
+                    return fund ? fund.name : inv.fundId;
+                }).filter((v, i, a) => a.indexOf(v) === i).join(', ');
                 
                 tr.innerHTML = `
                     <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap font-medium text-[10px] sm:text-sm ${isFuture ? 'text-gray-500' : 'text-gray-900'}">${monthDisplay}</td>
-                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-purple-600'} hidden sm:table-cell">${(r.salary || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
-                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-green-600'}">${r.emergency.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-purple-600'} hidden sm:table-cell">${(r.salary || 0).toLocaleString()}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-green-600'}">${(r.emergency || 0).toLocaleString()}</td>
                     <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-red-500'} hidden sm:table-cell">${expenseDisplay}</td>
-                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-blue-600'} font-medium">${r.dca.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
-                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm text-gray-500">${r.indexPrice > 0 ? r.indexPrice.toFixed(2) : '-'}</td>
-                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-cyan-600'} font-mono">${unitsDisplay}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-indigo-600'} font-medium">${totalInvestment.toLocaleString()}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-left text-[10px] sm:text-sm text-gray-500 hidden sm:table-cell truncate max-w-[100px]" title="${investmentNames}">${investmentNames || '-'}</td>
                     <td class="px-1 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-center font-medium">
                         <button onclick="duplicateRecord(${index})" class="text-indigo-600 hover:text-indigo-900 p-1" title="Duplicate"><i class="fas fa-copy text-[10px] sm:text-sm"></i></button>
                         <button onclick="deleteRecord(${index})" class="text-red-600 hover:text-red-900 p-1" title="Delete"><i class="fas fa-trash text-[10px] sm:text-sm"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
-
-                if (!isFuture && r.dca > 0 && r.indexPrice > 0) {
-                    totalInvestedTHB += r.dca;
-                    totalUnits += rowUnits;
-                }
             });
 
-            // NAV ปัจจุบัน (บาท)
-            const currentNAV = parseFloat(document.getElementById('currentNAV').value) || 0;
+            // Calculate portfolio values for each fund
+            const breakdownContainer = document.getElementById('investmentBreakdown');
+            breakdownContainer.innerHTML = '';
             
-            // มูลค่าปัจจุบัน = Units x NAV ปัจจุบัน (บาท)
-            const currentValueTHB = totalUnits * currentNAV;
+            let activeFundCount = 0;
             
-            const profit = currentValueTHB - totalInvestedTHB;
-            const profitPercent = totalInvestedTHB > 0 ? (profit / totalInvestedTHB) * 100 : 0;
+            Object.keys(fundAggregates).forEach(fundId => {
+                const agg = fundAggregates[fundId];
+                const fund = getFundById(fundId);
+                if (!fund) return;
+                
+                const currentValue = agg.totalUnits * fund.currentNAV;
+                const profit = currentValue - agg.totalInvested;
+                const profitPercent = agg.totalInvested > 0 ? (profit / agg.totalInvested) * 100 : 0;
+                
+                totalInvestedAll += agg.totalInvested;
+                totalCurrentValueAll += currentValue;
+                activeFundCount++;
+                
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center text-[10px] sm:text-xs';
+                item.innerHTML = `
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background: ${fund.color}"></span>
+                        <span class="truncate">${fund.name}</span>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-indigo-200">฿${currentValue.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                        <span class="${profit >= 0 ? 'text-green-300' : 'text-red-300'}">${profit >= 0 ? '+' : ''}${profitPercent.toFixed(1)}%</span>
+                    </div>
+                `;
+                breakdownContainer.appendChild(item);
+            });
+            
+            if (activeFundCount === 0) {
+                breakdownContainer.innerHTML = '<p class="text-indigo-200 text-[10px] sm:text-xs text-center">ยังไม่มีข้อมูลการลงทุน</p>';
+            }
 
-            document.getElementById('portValue').innerText = `฿${currentValueTHB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            // Total portfolio
+            const totalProfit = totalCurrentValueAll - totalInvestedAll;
+            const totalProfitPercent = totalInvestedAll > 0 ? (totalProfit / totalInvestedAll) * 100 : 0;
+
+            document.getElementById('portValue').innerText = `฿${totalCurrentValueAll.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
             
             const returnEl = document.getElementById('portReturn');
-            returnEl.innerHTML = `<span class="${profit >= 0 ? 'text-green-300' : 'text-red-300'}">${profit >= 0 ? '+' : ''}฿${profit.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})} (${profit >= 0 ? '+' : ''}${profitPercent.toFixed(1)}%)</span>`;
-
-            document.getElementById('totalUnits').innerText = totalUnits.toFixed(4);
-            document.getElementById('totalCost').innerText = `฿${totalInvestedTHB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            returnEl.innerHTML = `${totalProfit >= 0 ? '+' : ''}฿${totalProfit.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
+            returnEl.className = `text-base sm:text-xl font-bold mt-1 truncate ${totalProfit >= 0 ? 'text-green-300' : 'text-red-300'}`;
+            
+            document.getElementById('portReturnPercent').innerText = `${totalProfit >= 0 ? '+' : ''}${totalProfitPercent.toFixed(1)}%`;
+            document.getElementById('portReturnPercent').className = `text-[10px] sm:text-xs ${totalProfit >= 0 ? 'text-green-300' : 'text-red-300'}`;
+            
+            document.getElementById('totalCost').innerText = `฿${totalInvestedAll.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
+            document.getElementById('fundCount').innerText = activeFundCount;
 
             updateChart();
         }
@@ -1083,9 +1313,35 @@
             const validRecords = window.records.filter(r => !isFutureMonth(r.month));
             
             const labels = validRecords.map(r => r.month);
-            const dataEmergency = validRecords.map(r => r.emergency);
-            const dataDCA = validRecords.map(r => r.dca);
+            const dataEmergency = validRecords.map(r => r.emergency || 0);
             const dataExpense = validRecords.map(r => getRecordTotalExpenses(r));
+            
+            // Build datasets for each fund
+            const fundDatasets = [];
+            const fundColors = {};
+            
+            // Collect all unique fund IDs from records
+            const allFundIds = new Set();
+            validRecords.forEach(r => {
+                getRecordInvestments(r).forEach(inv => allFundIds.add(inv.fundId));
+            });
+            
+            allFundIds.forEach(fundId => {
+                const fund = getFundById(fundId);
+                const color = fund ? fund.color : '#9CA3AF';
+                const name = fund ? fund.name : fundId;
+                
+                fundDatasets.push({
+                    label: name,
+                    data: validRecords.map(r => {
+                        const investments = getRecordInvestments(r);
+                        const fundInv = investments.filter(i => i.fundId === fundId);
+                        return fundInv.reduce((sum, i) => sum + i.amount, 0);
+                    }),
+                    backgroundColor: color,
+                    stack: 'Stack 0',
+                });
+            });
             
             if (myChart) myChart.destroy();
 
@@ -1098,14 +1354,9 @@
                             label: 'เงินออมฉุกเฉิน',
                             data: dataEmergency,
                             backgroundColor: '#fbbf24',
-                            stack: 'Stack 0',
+                            stack: 'Stack 1',
                         },
-                        {
-                            label: 'DCA Investment',
-                            data: dataDCA,
-                            backgroundColor: '#4f46e5',
-                            stack: 'Stack 0',
-                        },
+                        ...fundDatasets,
                         {
                             label: 'ค่าใช้จ่าย',
                             data: dataExpense,
@@ -1126,7 +1377,13 @@
                         y: { stacked: true, beginAtZero: true }
                     },
                     plugins: {
-                        legend: { position: 'top' },
+                        legend: { 
+                            position: 'top',
+                            labels: { 
+                                boxWidth: 12, 
+                                font: { size: 10 } 
+                            }
+                        },
                         tooltip: { mode: 'index', intersect: false }
                     }
                 }
