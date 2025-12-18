@@ -10,13 +10,64 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
         body { font-family: 'Sarabun', sans-serif; }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 640px) {
+            /* Header */
+            header .max-w-7xl { padding: 0.75rem 0.75rem; }
+            header h1 { font-size: 1rem; }
+            
+            /* Portfolio Card */
+            .portfolio-card { padding: 1rem !important; }
+            .portfolio-card .text-3xl { font-size: 1.5rem !important; }
+            .portfolio-card .text-2xl { font-size: 1.25rem !important; }
+            .portfolio-card .text-xl { font-size: 1rem !important; }
+            
+            /* Form sections */
+            .form-section { padding: 0.75rem !important; }
+            .form-section .text-lg { font-size: 1rem !important; }
+            .form-section .text-sm { font-size: 0.8rem !important; }
+            .form-section .text-xs { font-size: 0.7rem !important; }
+            .form-section input { font-size: 0.875rem !important; padding: 0.5rem !important; }
+            .form-section label { font-size: 0.75rem !important; }
+            
+            /* DCA Toggle */
+            .dca-toggle { flex-direction: column; align-items: flex-start !important; gap: 0.5rem; }
+            .dca-toggle-label { flex-direction: row; }
+            
+            /* Buttons */
+            .btn-mobile { font-size: 0.8rem !important; padding: 0.5rem 0.75rem !important; }
+            
+            /* Table */
+            table { font-size: 0.75rem !important; }
+            table th, table td { padding: 0.5rem 0.25rem !important; }
+            
+            /* Weekly inputs */
+            .weekly-input-row { flex-wrap: wrap; }
+            .weekly-input-row input { width: 4rem !important; font-size: 0.75rem !important; }
+            .weekly-input-row span { font-size: 0.65rem !important; }
+            
+            /* Main container */
+            main { padding: 0.75rem !important; gap: 1rem !important; }
+            
+            /* Cards */
+            .card-mobile { padding: 1rem !important; }
+            .card-mobile h2 { font-size: 1rem !important; }
+        }
+        
+        /* Small phones */
+        @media (max-width: 380px) {
+            .portfolio-card .text-3xl { font-size: 1.25rem !important; }
+            .portfolio-card .grid { gap: 0.5rem !important; }
+            .form-section input { height: 2.25rem !important; }
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
 
     <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-indigo-600"><i class="fas fa-chart-line mr-2"></i>Wealth Tracker</h1>
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-4 flex justify-between items-center">
+            <h1 class="text-base sm:text-xl font-bold text-indigo-600"><i class="fas fa-chart-line mr-1 sm:mr-2"></i><span class="hidden xs:inline">Wealth </span>Tracker</h1>
             <div class="flex items-center space-x-3">
                 <!-- Auth UI -->
                 <div id="authSection" class="flex items-center space-x-2">
@@ -45,128 +96,128 @@
         </div>
     </header>
 
-    <main class="flex-grow max-w-7xl mx-auto px-4 py-6 w-full gap-6 flex flex-col lg:flex-row">
+    <main class="flex-grow max-w-7xl mx-auto px-2 sm:px-4 py-3 sm:py-6 w-full gap-4 sm:gap-6 flex flex-col lg:flex-row">
         
-        <aside class="w-full lg:w-1/3 space-y-6">
+        <aside class="w-full lg:w-1/3 space-y-4 sm:space-y-6">
             
-            <div class="bg-indigo-600 rounded-xl p-6 text-white shadow-lg">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-indigo-200 text-sm">NAV ปัจจุบัน (SCBS&P500E)</p>
+            <div class="bg-indigo-600 rounded-xl p-4 sm:p-6 text-white shadow-lg portfolio-card">
+                <div class="flex justify-between items-start gap-2">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-indigo-200 text-[10px] sm:text-sm">NAV ปัจจุบัน</p>
                         <div class="flex items-baseline mt-1">
-                            <input type="number" id="currentNAV" value="28.00" step="0.0001" class="bg-transparent text-3xl font-bold w-28 focus:outline-none border-b border-indigo-400" onchange="renderDashboard()">
-                            <span class="ml-1 text-sm">บาท</span>
+                            <input type="number" id="currentNAV" value="28.00" step="0.0001" class="bg-transparent text-xl sm:text-3xl font-bold w-20 sm:w-28 focus:outline-none border-b border-indigo-400" onchange="renderDashboard()">
+                            <span class="ml-1 text-[10px] sm:text-sm">บาท</span>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <p class="text-indigo-200 text-sm">มูลค่าพอร์ต DCA</p>
-                        <p class="text-2xl font-bold mt-1" id="portValue">Loading...</p>
-                        <p class="text-xs text-indigo-300" id="portReturn">---</p>
+                    <div class="text-right flex-1 min-w-0">
+                        <p class="text-indigo-200 text-[10px] sm:text-sm">มูลค่าพอร์ต DCA</p>
+                        <p class="text-lg sm:text-2xl font-bold mt-1 truncate" id="portValue">Loading...</p>
+                        <p class="text-[10px] sm:text-xs text-indigo-300 truncate" id="portReturn">---</p>
                     </div>
                 </div>
                 <!-- Units and NAV Info -->
-                <div class="mt-4 pt-4 border-t border-indigo-500 grid grid-cols-2 gap-4">
+                <div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-indigo-500 grid grid-cols-2 gap-2 sm:gap-4">
                     <div>
-                        <p class="text-indigo-200 text-xs">จำนวนหน่วยลงทุนรวม</p>
-                        <p class="text-xl font-bold mt-1" id="totalUnits">0.00</p>
-                        <p class="text-xs text-indigo-300">Units</p>
+                        <p class="text-indigo-200 text-[10px] sm:text-xs">หน่วยลงทุนรวม</p>
+                        <p class="text-base sm:text-xl font-bold mt-0.5 sm:mt-1" id="totalUnits">0.00</p>
+                        <p class="text-[10px] sm:text-xs text-indigo-300">Units</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-indigo-200 text-xs">ต้นทุนรวม</p>
-                        <p class="text-xl font-bold mt-1" id="totalCost">฿0</p>
-                        <p class="text-xs text-indigo-300">บาท</p>
+                        <p class="text-indigo-200 text-[10px] sm:text-xs">ต้นทุนรวม</p>
+                        <p class="text-base sm:text-xl font-bold mt-0.5 sm:mt-1 truncate" id="totalCost">฿0</p>
+                        <p class="text-[10px] sm:text-xs text-indigo-300">บาท</p>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h2 class="text-lg font-semibold mb-4 border-b pb-2">จัดการข้อมูลรายเดือน</h2>
+            <div class="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 card-mobile">
+                <h2 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b pb-2">จัดการข้อมูลรายเดือน</h2>
                 <form id="dataForm" class="space-y-4">
                     <input type="hidden" id="editIndex">
                     
                     <!-- เดือน/ปี และ เงินเดือน -->
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-2 sm:gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">เดือน/ปี (YYYY-MM)</label>
-                            <input type="month" id="inputMonth" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2">
+                            <label class="block text-xs sm:text-sm font-medium text-gray-700">เดือน/ปี</label>
+                            <input type="month" id="inputMonth" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-1.5 sm:p-2 text-sm">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">เงินเดือน (บาท)</label>
-                            <input type="number" id="inputSalary" placeholder="40,000" step="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 border p-2" oninput="calculateRemaining()">
+                            <label class="block text-xs sm:text-sm font-medium text-gray-700">เงินเดือน (บาท)</label>
+                            <input type="number" id="inputSalary" placeholder="40,000" step="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 border p-1.5 sm:p-2 text-sm" oninput="calculateRemaining()">
                         </div>
                     </div>
 
                     <!-- ส่วนค่าใช้จ่าย Dynamic -->
-                    <div class="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                        <div class="flex justify-between items-center mb-3">
-                            <p class="text-xs font-bold text-orange-600 uppercase">💸 ค่าใช้จ่าย</p>
-                            <button type="button" onclick="addExpenseRow()" class="text-xs bg-orange-500 text-white px-2 py-1 rounded hover:bg-orange-600 transition">
-                                <i class="fas fa-plus mr-1"></i>เพิ่มรายการ
+                    <div class="p-3 bg-orange-50 rounded-lg border border-orange-200 form-section">
+                        <div class="flex justify-between items-center mb-2 sm:mb-3">
+                            <p class="text-[10px] sm:text-xs font-bold text-orange-600 uppercase">💸 ค่าใช้จ่าย</p>
+                            <button type="button" onclick="addExpenseRow()" class="text-[10px] sm:text-xs bg-orange-500 text-white px-2 py-1 rounded hover:bg-orange-600 transition">
+                                <i class="fas fa-plus mr-1"></i>เพิ่ม
                             </button>
                         </div>
                         <div id="expenseContainer" class="space-y-2">
                             <!-- Dynamic expense rows will be added here -->
                         </div>
-                        <button type="button" onclick="addExpenseRow()" class="mt-2 w-full py-2 border-2 border-dashed border-orange-300 rounded-md text-orange-500 text-sm hover:bg-orange-100 transition">
+                        <button type="button" onclick="addExpenseRow()" class="mt-2 w-full py-1.5 sm:py-2 border-2 border-dashed border-orange-300 rounded-md text-orange-500 text-[10px] sm:text-sm hover:bg-orange-100 transition">
                             <i class="fas fa-plus mr-1"></i> เพิ่มรายการใช้จ่าย
                         </button>
                         
                         <!-- สรุปค่าใช้จ่ายรวม -->
-                        <div class="mt-3 pt-3 border-t border-orange-200 flex justify-between items-center">
-                            <span class="text-sm font-medium text-gray-700">รวมค่าใช้จ่าย:</span>
-                            <span id="totalExpenseDisplay" class="text-lg font-bold text-red-500">฿0</span>
+                        <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-orange-200 flex justify-between items-center">
+                            <span class="text-xs sm:text-sm font-medium text-gray-700">รวมค่าใช้จ่าย:</span>
+                            <span id="totalExpenseDisplay" class="text-sm sm:text-lg font-bold text-red-500">฿0</span>
                         </div>
                     </div>
 
                     <!-- ส่วนการลงทุน DCA -->
-                    <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                        <div class="flex justify-between items-center mb-3">
-                            <p class="text-xs font-bold text-indigo-600 uppercase">📈 ส่วนการลงทุน DCA (SCBS&P500E)</p>
+                    <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200 form-section">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+                            <p class="text-xs font-bold text-indigo-600 uppercase">📈 DCA (SCBS&P500E)</p>
                             <!-- DCA Mode Toggle -->
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-500">รายเดือน</span>
+                            <div class="flex items-center space-x-1 sm:space-x-2 text-[10px] sm:text-xs">
+                                <span class="text-gray-500 whitespace-nowrap">รายเดือน</span>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" id="weeklyMode" class="sr-only peer" onchange="toggleDCAMode()">
-                                    <div class="w-9 h-5 bg-gray-300 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    <div class="w-8 h-4 sm:w-9 sm:h-5 bg-gray-300 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 sm:after:h-4 sm:after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                                 </label>
-                                <span class="text-xs text-gray-500">รายสัปดาห์</span>
+                                <span class="text-gray-500 whitespace-nowrap">รายสัปดาห์</span>
                             </div>
                         </div>
                         
                         <!-- Monthly DCA Mode -->
                         <div id="monthlyDCASection">
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-2 gap-2 sm:gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">ยอดเงิน DCA (บาท)</label>
-                                    <input type="number" id="inputDCA" placeholder="0" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md border p-2" oninput="calculateRemaining()">
+                                    <label class="block text-[10px] sm:text-sm font-medium text-gray-700">ยอดเงิน DCA (บาท)</label>
+                                    <input type="number" id="inputDCA" placeholder="0" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md border p-1.5 sm:p-2 text-sm" oninput="calculateRemaining()">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">NAV ตอนซื้อ (บาท)</label>
-                                    <input type="number" id="inputIndexPrice" placeholder="เช่น 27.50" step="0.0001" class="mt-1 block w-full border-gray-300 rounded-md border p-2">
-                                    <p class="text-xs text-gray-400 mt-1">*ดู NAV ได้ที่ SCB Asset</p>
+                                    <label class="block text-[10px] sm:text-sm font-medium text-gray-700">NAV ตอนซื้อ (บาท)</label>
+                                    <input type="number" id="inputIndexPrice" placeholder="เช่น 27.50" step="0.0001" class="mt-1 block w-full border-gray-300 rounded-md border p-1.5 sm:p-2 text-sm">
+                                    <p class="text-[9px] sm:text-xs text-gray-400 mt-1">*ดู NAV ได้ที่ SCB Asset</p>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Weekly DCA Mode -->
                         <div id="weeklyDCASection" class="hidden">
-                            <div class="mb-3">
-                                <label class="block text-sm font-medium text-gray-700">ยอดเงินต่อสัปดาห์ (บาท)</label>
-                                <input type="number" id="weeklyAmount" placeholder="1000" step="0.01" value="1000" class="mt-1 block w-full border-gray-300 rounded-md border p-2" oninput="updateWeeklyTotal()">
+                            <div class="mb-2 sm:mb-3">
+                                <label class="block text-[10px] sm:text-sm font-medium text-gray-700">ยอดเงินต่อสัปดาห์ (บาท)</label>
+                                <input type="number" id="weeklyAmount" placeholder="1000" step="0.01" value="1000" class="mt-1 block w-full border-gray-300 rounded-md border p-1.5 sm:p-2 text-sm" oninput="updateWeeklyTotal()">
                             </div>
                             <div class="mb-2 flex justify-between items-center">
-                                <span class="text-sm font-medium text-gray-700">วันพุธในเดือนนี้:</span>
-                                <span id="wednesdayCount" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">0 วัน</span>
+                                <span class="text-[10px] sm:text-sm font-medium text-gray-700">วันพุธในเดือนนี้:</span>
+                                <span id="wednesdayCount" class="text-[10px] sm:text-xs bg-indigo-100 text-indigo-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">0 วัน</span>
                             </div>
-                            <div id="weeklyInputs" class="space-y-2 max-h-48 overflow-y-auto">
+                            <div id="weeklyInputs" class="space-y-1.5 sm:space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
                                 <!-- Weekly inputs will be generated here -->
                             </div>
-                            <div class="mt-3 pt-3 border-t border-indigo-200">
-                                <div class="flex justify-between text-sm">
+                            <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-indigo-200">
+                                <div class="flex justify-between text-[10px] sm:text-sm">
                                     <span class="text-gray-600">รวม DCA เดือนนี้:</span>
                                     <span id="weeklyTotalDCA" class="font-bold text-indigo-600">฿0</span>
                                 </div>
-                                <div class="flex justify-between text-sm mt-1">
+                                <div class="flex justify-between text-[10px] sm:text-sm mt-1">
                                     <span class="text-gray-600">รวม Units:</span>
                                     <span id="weeklyTotalUnits" class="font-bold text-indigo-600">0</span>
                                 </div>
@@ -175,39 +226,39 @@
                     </div>
 
                     <!-- ส่วนเงินออมฉุกเฉิน (Radio) -->
-                    <div class="p-3 bg-green-50 rounded-lg border border-green-200">
-                        <p class="text-xs font-bold text-green-600 mb-3 uppercase">🏦 เงินออมฉุกเฉิน</p>
+                    <div class="p-3 bg-green-50 rounded-lg border border-green-200 form-section">
+                        <p class="text-[10px] sm:text-xs font-bold text-green-600 mb-2 sm:mb-3 uppercase">🏦 เงินออมฉุกเฉิน</p>
                         
                         <!-- Radio Options -->
-                        <div class="space-y-2">
-                            <label class="flex items-center p-3 bg-white rounded-lg border-2 cursor-pointer transition hover:border-green-400" id="radioAutoLabel">
-                                <input type="radio" name="emergencyType" value="auto" checked class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500" onchange="toggleEmergencyMode()">
-                                <div class="ml-3 flex-1">
-                                    <span class="text-sm font-medium text-gray-800">คำนวณอัตโนมัติ</span>
-                                    <p class="text-xs text-gray-500">= เงินเดือน - ค่าใช้จ่ายทั้งหมด - DCA</p>
+                        <div class="space-y-1.5 sm:space-y-2">
+                            <label class="flex items-center p-2 sm:p-3 bg-white rounded-lg border-2 cursor-pointer transition hover:border-green-400" id="radioAutoLabel">
+                                <input type="radio" name="emergencyType" value="auto" checked class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600 border-gray-300 focus:ring-green-500 flex-shrink-0" onchange="toggleEmergencyMode()">
+                                <div class="ml-2 sm:ml-3 flex-1 min-w-0">
+                                    <span class="text-xs sm:text-sm font-medium text-gray-800">คำนวณอัตโนมัติ</span>
+                                    <p class="text-[9px] sm:text-xs text-gray-500 truncate">= เงินเดือน - ค่าใช้จ่าย - DCA</p>
                                 </div>
-                                <span id="autoEmergencyValue" class="text-lg font-bold text-green-600">฿0</span>
+                                <span id="autoEmergencyValue" class="text-sm sm:text-lg font-bold text-green-600 flex-shrink-0">฿0</span>
                             </label>
                             
-                            <label class="flex items-center p-3 bg-white rounded-lg border-2 cursor-pointer transition hover:border-green-400" id="radioCustomLabel">
-                                <input type="radio" name="emergencyType" value="custom" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500" onchange="toggleEmergencyMode()">
-                                <div class="ml-3 flex-1">
-                                    <span class="text-sm font-medium text-gray-800">กำหนดเอง</span>
-                                    <p class="text-xs text-gray-500">ระบุจำนวนเงินที่ต้องการออม</p>
+                            <label class="flex items-center p-2 sm:p-3 bg-white rounded-lg border-2 cursor-pointer transition hover:border-green-400" id="radioCustomLabel">
+                                <input type="radio" name="emergencyType" value="custom" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600 border-gray-300 focus:ring-green-500 flex-shrink-0" onchange="toggleEmergencyMode()">
+                                <div class="ml-2 sm:ml-3 flex-1 min-w-0">
+                                    <span class="text-xs sm:text-sm font-medium text-gray-800">กำหนดเอง</span>
+                                    <p class="text-[9px] sm:text-xs text-gray-500">ระบุจำนวนเงินที่ต้องการออม</p>
                                 </div>
                             </label>
                         </div>
                         
                         <!-- Custom Input (hidden by default) -->
-                        <div id="customEmergencySection" class="mt-3 hidden">
-                            <label class="block text-sm font-medium text-gray-700">จำนวนเงินออมฉุกเฉิน (บาท)</label>
-                            <input type="number" id="inputEmergency" placeholder="0" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 border p-2">
-                            <p id="emergencyWarning" class="text-xs text-orange-500 mt-1 hidden"></p>
+                        <div id="customEmergencySection" class="mt-2 sm:mt-3 hidden">
+                            <label class="block text-[10px] sm:text-sm font-medium text-gray-700">จำนวนเงินออมฉุกเฉิน (บาท)</label>
+                            <input type="number" id="inputEmergency" placeholder="0" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 border p-1.5 sm:p-2 text-sm">
+                            <p id="emergencyWarning" class="text-[9px] sm:text-xs text-orange-500 mt-1 hidden"></p>
                         </div>
                         
                         <!-- Summary Box -->
-                        <div class="mt-3 p-3 bg-green-100 rounded-lg">
-                            <div class="flex justify-between text-sm">
+                        <div class="mt-2 sm:mt-3 p-2 sm:p-3 bg-green-100 rounded-lg">
+                            <div class="flex justify-between text-[10px] sm:text-sm">
                                 <span class="text-gray-600">เงินคงเหลือหลังหักค่าใช้จ่าย+DCA:</span>
                                 <span id="remainingDisplay" class="font-bold text-gray-800">฿0</span>
                             </div>
@@ -215,42 +266,42 @@
                     </div>
 
                     <div class="flex gap-2 pt-2">
-                        <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">บันทึกข้อมูล</button>
-                        <button type="button" onclick="resetForm()" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600">ล้าง</button>
+                        <button type="submit" class="flex-1 bg-indigo-600 text-white py-1.5 sm:py-2 px-3 sm:px-4 rounded-md hover:bg-indigo-700 transition text-sm sm:text-base">บันทึก</button>
+                        <button type="button" onclick="resetForm()" class="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 text-sm sm:text-base">ล้าง</button>
                     </div>
                 </form>
             </div>
         </aside>
 
-        <section class="w-full lg:w-2/3 space-y-6">
+        <section class="w-full lg:w-2/3 space-y-4 sm:space-y-6">
             
-            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h2 class="text-lg font-semibold mb-4">ภาพรวมการเติบโต</h2>
-                <div class="h-80 w-full">
+            <div class="bg-white rounded-xl p-3 sm:p-6 shadow-sm border border-gray-100 card-mobile">
+                <h2 class="text-sm sm:text-lg font-semibold mb-3 sm:mb-4">ภาพรวมการเติบโต</h2>
+                <div class="h-48 sm:h-80 w-full">
                     <canvas id="mainChart"></canvas>
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                    <h2 class="text-lg font-semibold">รายการย้อนหลัง</h2>
-                    <span class="text-xs text-gray-400">คลิกที่แถวเพื่อแก้ไข</span>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden card-mobile">
+                <div class="px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="text-sm sm:text-lg font-semibold">รายการย้อนหลัง</h2>
+                    <span class="text-[9px] sm:text-xs text-gray-400 hidden sm:inline">คลิกที่แถวเพื่อแก้ไข</span>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 text-[10px] sm:text-sm">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เดือน</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-purple-600 uppercase tracking-wider">เงินเดือน</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">ออมฉุกเฉิน</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-red-500 uppercase tracking-wider">ค่าใช้จ่าย</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-blue-600 uppercase tracking-wider">DCA</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">NAV</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-cyan-600 uppercase tracking-wider">Units</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-left text-[9px] sm:text-xs font-medium text-gray-500 uppercase">เดือน</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-purple-600 uppercase hidden sm:table-cell">เงินเดือน</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-green-600 uppercase">ออม</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-red-500 uppercase hidden sm:table-cell">ค่าใช้จ่าย</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-blue-600 uppercase">DCA</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-gray-500 uppercase">NAV</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-right text-[9px] sm:text-xs font-medium text-cyan-600 uppercase">Units</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3 text-center text-[9px] sm:text-xs font-medium text-gray-500 uppercase"></th>
                             </tr>
                         </thead>
-                        <tbody id="dataTableBody" class="bg-white divide-y divide-gray-200 text-sm">
+                        <tbody id="dataTableBody" class="bg-white divide-y divide-gray-200">
                             </tbody>
                     </table>
                 </div>
@@ -501,18 +552,18 @@
             const rowId = `expense_${expenseRowCounter++}`;
             
             const row = document.createElement('div');
-            row.className = 'flex gap-2 items-center';
+            row.className = 'flex gap-1 sm:gap-2 items-center';
             row.id = rowId;
             row.innerHTML = `
-                <input type="text" placeholder="ชื่อรายการ (เช่น ค่ากิน)" value="${name}" 
-                    class="flex-1 rounded-md border-gray-300 border p-2 text-sm focus:border-orange-500" 
+                <input type="text" placeholder="ชื่อรายการ" value="${name}" 
+                    class="flex-1 min-w-0 rounded-md border-gray-300 border p-1.5 sm:p-2 text-xs sm:text-sm focus:border-orange-500" 
                     oninput="calculateRemaining()">
                 <input type="number" placeholder="0" value="${amount}" step="0.01"
-                    class="w-28 rounded-md border-gray-300 border p-2 text-sm text-right focus:border-orange-500" 
+                    class="w-20 sm:w-28 rounded-md border-gray-300 border p-1.5 sm:p-2 text-xs sm:text-sm text-right focus:border-orange-500" 
                     oninput="calculateRemaining()">
                 <button type="button" onclick="removeExpenseRow('${rowId}')" 
-                    class="w-8 h-8 flex items-center justify-center bg-red-100 text-red-500 rounded hover:bg-red-500 hover:text-white transition">
-                    <i class="fas fa-times"></i>
+                    class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-red-100 text-red-500 rounded hover:bg-red-500 hover:text-white transition flex-shrink-0">
+                    <i class="fas fa-times text-xs"></i>
                 </button>
             `;
             container.appendChild(row);
@@ -595,7 +646,7 @@
         function generateWeeklyInputs() {
             const monthInput = document.getElementById('inputMonth').value;
             if (!monthInput) {
-                document.getElementById('weeklyInputs').innerHTML = '<p class="text-sm text-gray-400 text-center py-4">กรุณาเลือกเดือนก่อน</p>';
+                document.getElementById('weeklyInputs').innerHTML = '<p class="text-[10px] sm:text-sm text-gray-400 text-center py-3 sm:py-4">กรุณาเลือกเดือนก่อน</p>';
                 document.getElementById('wednesdayCount').textContent = '0 วัน';
                 return;
             }
@@ -608,15 +659,15 @@
             document.getElementById('wednesdayCount').textContent = `${wednesdays.length} วัน`;
             
             container.innerHTML = wednesdays.map((wed, index) => `
-                <div class="flex gap-2 items-center bg-white p-2 rounded-lg border border-indigo-100">
-                    <span class="text-xs text-gray-500 w-16">${formatThaiDate(wed)}</span>
+                <div class="flex gap-1 sm:gap-2 items-center bg-white p-1.5 sm:p-2 rounded-lg border border-indigo-100 weekly-input-row">
+                    <span class="text-[9px] sm:text-xs text-gray-500 w-12 sm:w-16 flex-shrink-0">${formatThaiDate(wed)}</span>
                     <input type="number" value="${weeklyAmount}" step="0.01" 
-                        class="w-20 text-sm border-gray-300 rounded border p-1 text-right weekly-amount" 
+                        class="w-14 sm:w-20 text-[10px] sm:text-sm border-gray-300 rounded border p-1 text-right weekly-amount" 
                         oninput="updateWeeklyTotal()">
-                    <span class="text-xs text-gray-400">บาท</span>
-                    <span class="text-xs text-gray-400 mx-1">NAV:</span>
+                    <span class="text-[9px] sm:text-xs text-gray-400 hidden sm:inline">บาท</span>
+                    <span class="text-[9px] sm:text-xs text-gray-400">NAV:</span>
                     <input type="number" placeholder="27.50" step="0.0001" 
-                        class="w-20 text-sm border-gray-300 rounded border p-1 text-right weekly-nav" 
+                        class="w-14 sm:w-20 text-[10px] sm:text-sm border-gray-300 rounded border p-1 text-right weekly-nav" 
                         oninput="updateWeeklyTotal()">
                 </div>
             `).join('');
@@ -980,22 +1031,22 @@
                 
                 let monthDisplay = r.month;
                 if (isFuture) {
-                    monthDisplay = `${r.month} <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium">📅 อนาคต</span>`;
+                    monthDisplay = `${r.month} <span class="ml-1 px-1 py-0.5 bg-yellow-100 text-yellow-700 text-[8px] sm:text-xs rounded font-medium hidden sm:inline">📅 อนาคต</span>`;
                 }
                 
-                let unitsDisplay = rowUnits > 0 ? rowUnits.toFixed(6) : '-';
+                let unitsDisplay = rowUnits > 0 ? rowUnits.toFixed(4) : '-';
                 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap font-medium ${isFuture ? 'text-gray-500' : 'text-gray-900'}">${monthDisplay}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right ${isFuture ? 'text-gray-400' : 'text-purple-600'}">${(r.salary || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right ${isFuture ? 'text-gray-400' : 'text-green-600'}">${r.emergency.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right ${isFuture ? 'text-gray-400' : 'text-red-500'}">${expenseDisplay}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right ${isFuture ? 'text-gray-400' : 'text-blue-600'} font-medium">${r.dca.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-gray-500">${r.indexPrice > 0 ? r.indexPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right ${isFuture ? 'text-gray-400' : 'text-cyan-600'} font-mono text-xs">${unitsDisplay}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-                        <button onclick="duplicateRecord(${index})" class="text-indigo-600 hover:text-indigo-900" title="Duplicate"><i class="fas fa-copy"></i></button>
-                        <button onclick="deleteRecord(${index})" class="text-red-600 hover:text-red-900" title="Delete"><i class="fas fa-trash"></i></button>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap font-medium text-[10px] sm:text-sm ${isFuture ? 'text-gray-500' : 'text-gray-900'}">${monthDisplay}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-purple-600'} hidden sm:table-cell">${(r.salary || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-green-600'}">${r.emergency.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-red-500'} hidden sm:table-cell">${expenseDisplay}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-blue-600'} font-medium">${r.dca.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm text-gray-500">${r.indexPrice > 0 ? r.indexPrice.toFixed(2) : '-'}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-right text-[10px] sm:text-sm ${isFuture ? 'text-gray-400' : 'text-cyan-600'} font-mono">${unitsDisplay}</td>
+                    <td class="px-1 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-center font-medium">
+                        <button onclick="duplicateRecord(${index})" class="text-indigo-600 hover:text-indigo-900 p-1" title="Duplicate"><i class="fas fa-copy text-[10px] sm:text-sm"></i></button>
+                        <button onclick="deleteRecord(${index})" class="text-red-600 hover:text-red-900 p-1" title="Delete"><i class="fas fa-trash text-[10px] sm:text-sm"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1018,7 +1069,7 @@
             document.getElementById('portValue').innerText = `฿${currentValueTHB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             
             const returnEl = document.getElementById('portReturn');
-            returnEl.innerHTML = `กำไร/ขาดทุน: <span class="${profit >= 0 ? 'text-green-300' : 'text-red-300'}">${profit >= 0 ? '+' : ''}฿${profit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${profit >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)</span>`;
+            returnEl.innerHTML = `<span class="${profit >= 0 ? 'text-green-300' : 'text-red-300'}">${profit >= 0 ? '+' : ''}฿${profit.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})} (${profit >= 0 ? '+' : ''}${profitPercent.toFixed(1)}%)</span>`;
 
             document.getElementById('totalUnits').innerText = totalUnits.toFixed(4);
             document.getElementById('totalCost').innerText = `฿${totalInvestedTHB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
