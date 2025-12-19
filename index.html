@@ -209,13 +209,46 @@
                             </button>
                         </div>
                         
-                        <div id="investmentContainer" class="space-y-2">
-                            <!-- Investment rows will be added here -->
+                        <!-- DCA Mode Toggle -->
+                        <div class="mb-3 p-2 bg-white rounded-lg border border-indigo-100">
+                            <div class="flex items-center justify-between dca-toggle">
+                                <span class="text-[10px] sm:text-xs text-gray-600 dca-toggle-label">
+                                    <i class="fas fa-calendar-alt mr-1"></i> รูปแบบการลงทุน:
+                                </span>
+                                <div class="flex rounded-lg border border-indigo-200 overflow-hidden">
+                                    <button type="button" id="dcaModeMonthly" onclick="setDCAMode('monthly')" 
+                                        class="px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-medium transition bg-indigo-600 text-white">
+                                        รายเดือน
+                                    </button>
+                                    <button type="button" id="dcaModeWeekly" onclick="setDCAMode('weekly')" 
+                                        class="px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-medium transition bg-white text-gray-600 hover:bg-indigo-50">
+                                        รายสัปดาห์ (พุธ)
+                                    </button>
+                                </div>
+                            </div>
+                            <p id="weeklyInfo" class="hidden mt-2 text-[9px] sm:text-xs text-indigo-500">
+                                <i class="fas fa-info-circle mr-1"></i> 
+                                <span id="wednesdayCount">เลือกเดือนเพื่อดูจำนวนวันพุธ</span>
+                            </p>
                         </div>
                         
-                        <button type="button" onclick="addInvestmentRow()" class="mt-2 w-full py-1.5 sm:py-2 border-2 border-dashed border-indigo-300 rounded-md text-indigo-500 text-[10px] sm:text-sm hover:bg-indigo-100 transition">
-                            <i class="fas fa-plus mr-1"></i> เพิ่มการลงทุน
-                        </button>
+                        <!-- Monthly Mode Container -->
+                        <div id="monthlyModeContainer">
+                            <div id="investmentContainer" class="space-y-2">
+                                <!-- Investment rows will be added here -->
+                            </div>
+                            
+                            <button type="button" onclick="addInvestmentRow()" class="mt-2 w-full py-1.5 sm:py-2 border-2 border-dashed border-indigo-300 rounded-md text-indigo-500 text-[10px] sm:text-sm hover:bg-indigo-100 transition">
+                                <i class="fas fa-plus mr-1"></i> เพิ่มการลงทุน
+                            </button>
+                        </div>
+                        
+                        <!-- Weekly Mode Container (Hidden by default) -->
+                        <div id="weeklyModeContainer" class="hidden space-y-2">
+                            <div id="weeklyDCAContainer" class="space-y-2">
+                                <!-- Weekly DCA inputs will be generated here -->
+                            </div>
+                        </div>
                         
                         <!-- สรุปการลงทุนรวม -->
                         <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-indigo-200 flex justify-between items-center">
@@ -598,6 +631,14 @@
             loadData();
             renderDashboard();
             addExpenseRow();
+            
+            // Listen for month changes to update weekly DCA inputs
+            document.getElementById('inputMonth').addEventListener('change', () => {
+                if (currentDCAMode === 'weekly') {
+                    generateWeeklyInputs();
+                }
+                calculateRemaining();
+            });
             addInvestmentRow('scbs_p500e'); // Add default investment
             calculateRemaining();
         });
@@ -701,6 +742,186 @@
             return total;
         }
 
+        // --- DCA MODE MANAGEMENT ---
+        
+        let currentDCAMode = 'monthly'; // 'monthly' or 'weekly'
+        
+        function setDCAMode(mode) {
+            currentDCAMode = mode;
+            
+            const monthlyBtn = document.getElementById('dcaModeMonthly');
+            const weeklyBtn = document.getElementById('dcaModeWeekly');
+            const monthlyContainer = document.getElementById('monthlyModeContainer');
+            const weeklyContainer = document.getElementById('weeklyModeContainer');
+            const weeklyInfo = document.getElementById('weeklyInfo');
+            
+            if (mode === 'monthly') {
+                monthlyBtn.className = 'px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-medium transition bg-indigo-600 text-white';
+                weeklyBtn.className = 'px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-medium transition bg-white text-gray-600 hover:bg-indigo-50';
+                monthlyContainer.classList.remove('hidden');
+                weeklyContainer.classList.add('hidden');
+                weeklyInfo.classList.add('hidden');
+            } else {
+                weeklyBtn.className = 'px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-medium transition bg-indigo-600 text-white';
+                monthlyBtn.className = 'px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-medium transition bg-white text-gray-600 hover:bg-indigo-50';
+                monthlyContainer.classList.add('hidden');
+                weeklyContainer.classList.remove('hidden');
+                weeklyInfo.classList.remove('hidden');
+                generateWeeklyInputs();
+            }
+            calculateRemaining();
+        }
+        
+        function getWednesdaysInMonth(year, month) {
+            // month is 1-based (1 = January)
+            const wednesdays = [];
+            const date = new Date(year, month - 1, 1); // Start of month
+            
+            // Find first Wednesday
+            while (date.getDay() !== 3) { // 3 = Wednesday
+                date.setDate(date.getDate() + 1);
+            }
+            
+            // Collect all Wednesdays in the month
+            while (date.getMonth() === month - 1) {
+                wednesdays.push(new Date(date));
+                date.setDate(date.getDate() + 7);
+            }
+            
+            return wednesdays;
+        }
+        
+        function formatThaiDate(date) {
+            const days = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 
+                           'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+        }
+        
+        function generateWeeklyInputs() {
+            const monthInput = document.getElementById('inputMonth').value;
+            const container = document.getElementById('weeklyDCAContainer');
+            
+            if (!monthInput) {
+                container.innerHTML = '<p class="text-center text-gray-400 text-xs py-4">กรุณาเลือกเดือนก่อน</p>';
+                document.getElementById('wednesdayCount').textContent = 'เลือกเดือนเพื่อดูจำนวนวันพุธ';
+                return;
+            }
+            
+            const [year, month] = monthInput.split('-').map(Number);
+            const wednesdays = getWednesdaysInMonth(year, month);
+            
+            document.getElementById('wednesdayCount').textContent = 
+                `เดือนนี้มี ${wednesdays.length} วันพุธ`;
+            
+            // Get existing weekly data if any
+            const existingData = getExistingWeeklyData();
+            
+            container.innerHTML = wednesdays.map((wed, index) => {
+                const dateStr = wed.toISOString().split('T')[0];
+                const existingWeek = existingData.find(w => w.date === dateStr);
+                const existingAmount = existingWeek ? existingWeek.amount : '';
+                const existingNav = existingWeek ? existingWeek.nav : '';
+                const existingFundId = existingWeek ? existingWeek.fundId : 'scbs_p500e';
+                const fund = getFundById(existingFundId);
+                const fundColor = fund ? fund.color : '#4F46E5';
+                const fundName = fund ? fund.name : 'SCBS&P500E';
+                
+                return `
+                    <div class="weekly-input-row flex gap-1 sm:gap-2 items-center bg-white p-2 rounded-lg border border-indigo-100" 
+                         data-date="${dateStr}" data-fund-id="${existingFundId}">
+                        <div class="flex-shrink-0 w-16 sm:w-20">
+                            <span class="text-[9px] sm:text-xs text-gray-500 font-medium">
+                                <i class="fas fa-calendar-day text-indigo-400 mr-0.5"></i>
+                                ${formatThaiDate(wed)}
+                            </span>
+                        </div>
+                        <button type="button" onclick="openWeeklyFundSelect('${dateStr}')" 
+                            class="hidden sm:block flex-shrink-0 w-20 text-left rounded border-gray-300 border p-1 text-[10px] bg-gray-50 hover:bg-gray-100 transition truncate"
+                            style="border-left: 3px solid ${fundColor}">
+                            ${fundName}
+                        </button>
+                        <input type="number" placeholder="ยอดเงิน" value="${existingAmount}" step="0.01"
+                            class="flex-1 min-w-0 w-16 sm:w-20 rounded-md border-gray-300 border p-1.5 text-[10px] sm:text-xs text-right focus:border-indigo-500 weekly-amount" 
+                            oninput="calculateRemaining()">
+                        <input type="number" placeholder="NAV" value="${existingNav}" step="0.0001"
+                            class="w-12 sm:w-16 rounded-md border-gray-300 border p-1.5 text-[10px] sm:text-xs text-right focus:border-indigo-500 weekly-nav">
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function getExistingWeeklyData() {
+            const editIndex = document.getElementById('editIndex').value;
+            if (editIndex !== '' && window.records[editIndex]) {
+                return window.records[editIndex].weeklyDCA || [];
+            }
+            return [];
+        }
+        
+        function getWeeklyDCAItems() {
+            const items = [];
+            document.querySelectorAll('#weeklyDCAContainer .weekly-input-row').forEach(row => {
+                const date = row.dataset.date;
+                const fundId = row.dataset.fundId || 'scbs_p500e';
+                const amount = parseFloat(row.querySelector('.weekly-amount').value) || 0;
+                const nav = parseFloat(row.querySelector('.weekly-nav').value) || 0;
+                if (amount > 0) {
+                    const units = nav > 0 ? amount / nav : 0;
+                    items.push({ date, fundId, amount, nav, units });
+                }
+            });
+            return items;
+        }
+        
+        function getTotalWeeklyDCA() {
+            let total = 0;
+            document.querySelectorAll('.weekly-amount').forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            return total;
+        }
+        
+        function openWeeklyFundSelect(dateStr) {
+            // Store which weekly row we're selecting for
+            window.currentWeeklyDate = dateStr;
+            
+            const modal = document.getElementById('fundSelectModal');
+            const list = document.getElementById('fundSelectList');
+            
+            list.innerHTML = window.fundTypes.map(fund => `
+                <button type="button" onclick="selectWeeklyFund('${fund.id}')" 
+                    class="w-full p-3 rounded-lg border hover:bg-indigo-50 transition flex items-center gap-3 text-left"
+                    style="border-left: 4px solid ${fund.color}">
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-800">${fund.name}</div>
+                        <div class="text-xs text-gray-500">NAV: ฿${fund.currentNAV.toFixed(2)}</div>
+                    </div>
+                </button>
+            `).join('') || '<p class="text-center text-gray-400 py-4">ไม่มีกองทุน</p>';
+            
+            modal.classList.remove('hidden');
+        }
+        
+        function selectWeeklyFund(fundId) {
+            if (!window.currentWeeklyDate) return;
+            
+            const row = document.querySelector(`#weeklyDCAContainer .weekly-input-row[data-date="${window.currentWeeklyDate}"]`);
+            const fund = getFundById(fundId);
+            
+            if (row && fund) {
+                row.dataset.fundId = fundId;
+                const btn = row.querySelector('button');
+                if (btn) {
+                    btn.innerHTML = fund.name;
+                    btn.style.borderLeftColor = fund.color;
+                }
+            }
+            
+            closeFundSelectModal();
+            window.currentWeeklyDate = null;
+        }
+
         // --- INVESTMENT MANAGEMENT FUNCTIONS ---
         
         function getFundById(id) {
@@ -763,6 +984,9 @@
         }
         
         function getTotalInvestments() {
+            if (currentDCAMode === 'weekly') {
+                return getTotalWeeklyDCA();
+            }
             let total = 0;
             document.querySelectorAll('.investment-amount').forEach(input => {
                 total += parseFloat(input.value) || 0;
@@ -989,9 +1213,31 @@
             
             const salary = parseFloat(document.getElementById('inputSalary').value) || 0;
             const expenses = getExpenseItems();
-            const investments = getInvestmentItems();
+            
+            // Get investments based on current mode
+            let investments = [];
+            let weeklyDCA = [];
+            let totalInvestments = 0;
+            
+            if (currentDCAMode === 'weekly') {
+                weeklyDCA = getWeeklyDCAItems();
+                totalInvestments = weeklyDCA.reduce((sum, w) => sum + w.amount, 0);
+                // Convert weekly data to investments format for backward compatibility
+                const aggregatedByFund = {};
+                weeklyDCA.forEach(w => {
+                    if (!aggregatedByFund[w.fundId]) {
+                        aggregatedByFund[w.fundId] = { fundId: w.fundId, amount: 0, nav: w.nav, units: 0 };
+                    }
+                    aggregatedByFund[w.fundId].amount += w.amount;
+                    aggregatedByFund[w.fundId].units += w.units;
+                });
+                investments = Object.values(aggregatedByFund);
+            } else {
+                investments = getInvestmentItems();
+                totalInvestments = investments.reduce((sum, i) => sum + i.amount, 0);
+            }
+            
             const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-            const totalInvestments = investments.reduce((sum, i) => sum + i.amount, 0);
             const remaining = salary - totalExpenses - totalInvestments;
             
             const emergencyType = document.querySelector('input[name="emergencyType"]:checked')?.value || 'auto';
@@ -1008,6 +1254,8 @@
                 emergency: emergency,
                 expenses: expenses,
                 investments: investments,
+                dcaMode: currentDCAMode,
+                weeklyDCA: weeklyDCA,
                 // Keep legacy fields for backward compatibility
                 dca: totalInvestments,
                 indexPrice: investments.length > 0 && investments[0].nav > 0 ? investments[0].nav : 0
@@ -1047,19 +1295,39 @@
                 addExpenseRow();
             }
             
-            // Clear and populate investments
-            document.getElementById('investmentContainer').innerHTML = '';
-            investmentRowCounter = 0;
+            // Set DCA mode based on saved record
+            const savedMode = r.dcaMode || 'monthly';
+            setDCAMode(savedMode);
             
-            if (r.investments && Array.isArray(r.investments)) {
-                r.investments.forEach(inv => addInvestmentRow(inv.fundId, inv.amount, inv.nav));
-            } else if (r.dca > 0) {
-                // Legacy support: convert old dca/indexPrice to new format
-                addInvestmentRow('scbs_p500e', r.dca, r.indexPrice);
-            }
-            
-            if (document.querySelectorAll('#investmentContainer > div').length === 0) {
-                addInvestmentRow('scbs_p500e');
+            if (savedMode === 'weekly' && r.weeklyDCA && r.weeklyDCA.length > 0) {
+                // Weekly mode: regenerate inputs and populate values
+                generateWeeklyInputs();
+                setTimeout(() => {
+                    r.weeklyDCA.forEach(w => {
+                        const row = document.querySelector(`#weeklyDCAContainer .weekly-input-row[data-date="${w.date}"]`);
+                        if (row) {
+                            row.querySelector('.weekly-amount').value = w.amount || '';
+                            row.querySelector('.weekly-nav').value = w.nav || '';
+                            row.dataset.fundId = w.fundId || 'scbs_p500e';
+                        }
+                    });
+                    calculateRemaining();
+                }, 100);
+            } else {
+                // Monthly mode: populate investments
+                document.getElementById('investmentContainer').innerHTML = '';
+                investmentRowCounter = 0;
+                
+                if (r.investments && Array.isArray(r.investments)) {
+                    r.investments.forEach(inv => addInvestmentRow(inv.fundId, inv.amount, inv.nav));
+                } else if (r.dca > 0) {
+                    // Legacy support: convert old dca/indexPrice to new format
+                    addInvestmentRow('scbs_p500e', r.dca, r.indexPrice);
+                }
+                
+                if (document.querySelectorAll('#investmentContainer > div').length === 0) {
+                    addInvestmentRow('scbs_p500e');
+                }
             }
             
             const salary = r.salary || 0;
@@ -1111,18 +1379,35 @@
                 addExpenseRow();
             }
             
-            // Clear and populate investments (without NAV - user needs to update)
-            document.getElementById('investmentContainer').innerHTML = '';
-            investmentRowCounter = 0;
+            // Set DCA mode based on original record
+            const originalMode = r.dcaMode || 'monthly';
+            setDCAMode(originalMode);
             
-            if (r.investments && Array.isArray(r.investments)) {
-                r.investments.forEach(inv => addInvestmentRow(inv.fundId, inv.amount, '')); // No NAV for new month
-            } else if (r.dca > 0) {
-                addInvestmentRow('scbs_p500e', r.dca, '');
-            }
-            
-            if (document.querySelectorAll('#investmentContainer > div').length === 0) {
-                addInvestmentRow('scbs_p500e');
+            if (originalMode === 'weekly') {
+                // For weekly mode, generate new inputs for current month
+                generateWeeklyInputs();
+                // Copy amounts but not NAV (user needs to update for new dates)
+                if (r.weeklyDCA && r.weeklyDCA.length > 0) {
+                    // Just copy the first week's amount as a template
+                    const templateAmount = r.weeklyDCA[0]?.amount || '';
+                    document.querySelectorAll('.weekly-amount').forEach(input => {
+                        input.value = templateAmount;
+                    });
+                }
+            } else {
+                // Clear and populate investments (without NAV - user needs to update)
+                document.getElementById('investmentContainer').innerHTML = '';
+                investmentRowCounter = 0;
+                
+                if (r.investments && Array.isArray(r.investments)) {
+                    r.investments.forEach(inv => addInvestmentRow(inv.fundId, inv.amount, '')); // No NAV for new month
+                } else if (r.dca > 0) {
+                    addInvestmentRow('scbs_p500e', r.dca, '');
+                }
+                
+                if (document.querySelectorAll('#investmentContainer > div').length === 0) {
+                    addInvestmentRow('scbs_p500e');
+                }
             }
             
             const salary = r.salary || 0;
@@ -1165,10 +1450,16 @@
             expenseRowCounter = 0;
             addExpenseRow();
             
+            // Reset to monthly DCA mode
+            setDCAMode('monthly');
+            
             // Reset investments
             document.getElementById('investmentContainer').innerHTML = '';
             investmentRowCounter = 0;
             addInvestmentRow('scbs_p500e');
+            
+            // Clear weekly container
+            document.getElementById('weeklyDCAContainer').innerHTML = '';
             
             document.querySelector('input[name="emergencyType"][value="auto"]').checked = true;
             toggleEmergencyMode();
